@@ -4,11 +4,12 @@ import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { VisitorCard } from "@/components/VisitorCard";
 import { SearchBar } from "@/components/SearchBar";
+import { SortToggle } from "@/components/SortToggle";
 import { useVisitors } from "@/lib/hooks/useVisitors";
 import { useAppData } from "@/lib/hooks/useAppData";
 
 export default function SettledVisitorsPage() {
-  const { visitors, loading, error } = useVisitors("Settled");
+  const { visitors, loading, error, sortOrder, setSortOrder } = useVisitors("Settled");
   const { welcomers } = useAppData();
   const [search, setSearch] = useState("");
 
@@ -28,7 +29,12 @@ export default function SettledVisitorsPage() {
       />
 
       <div className="max-w-2xl mx-auto px-5 -mt-3">
-        <SearchBar value={search} onChange={setSearch} />
+        <div className="flex gap-2 mb-4">
+          <div className="flex-1">
+            <SearchBar value={search} onChange={setSearch} />
+          </div>
+          <SortToggle sortOrder={sortOrder} onChange={setSortOrder} />
+        </div>
 
         <div className="space-y-3">
           {loading && <p className="text-body text-textSecondary py-8 text-center">Loading…</p>}

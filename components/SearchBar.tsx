@@ -10,7 +10,7 @@ interface SearchBarProps {
 
 export function SearchBar({ value, onChange, placeholder = "Search by name…" }: SearchBarProps) {
   return (
-    <div className="relative mb-4">
+    <div className="relative">
       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-textSecondary pointer-events-none" />
       <input
         type="text"
