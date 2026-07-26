@@ -258,20 +258,15 @@ export default function VisitorDetailPage() {
           <div className="card p-4 flex flex-col gap-2">
             {visitor.email && (
               
-                href={`mailto:${visitor.email}`}
-                className="flex items-center gap-2 text-body text-primary"
-              >
+              <a href={`mailto:${visitor.email}`} className="flex items-center gap-2 text-body text-primary">
                 <Mail className="w-4 h-4" /> {visitor.email}
               </a>
             )}
             {visitor.phone_number && (
-              
-                href={`tel:${visitor.phone_number}`}
-                className="flex items-center gap-2 text-body text-primary"
-              >
+              <a href={`tel:${visitor.phone_number}`} className="flex items-center gap-2 text-body text-primary">
                 <Phone className="w-4 h-4" /> {visitor.phone_number}
               </a>
-            )}
+            )}  
           </div>
         )}
 
