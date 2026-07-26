@@ -73,12 +73,15 @@ export interface Visitor {
   week1_attended: boolean;
   week1_date: string | null;
   week1_notes: string | null;
+  week1_notes_by: string | null;
   week2_attended: boolean;
   week2_date: string | null;
   week2_notes: string | null;
+  week2_notes_by: string | null;
   week3_attended: boolean;
   week3_date: string | null;
   week3_notes: string | null;
+  week3_notes_by: string | null;
   extra_notes: string | null;
 
   catchup_flag: boolean;

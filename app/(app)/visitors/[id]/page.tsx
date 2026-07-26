@@ -27,7 +27,7 @@ import {
 export default function VisitorDetailPage() {
   const params = useParams<{ id: string }>();
   const supabase = createClient();
-  const { profile, welcomers, bibleStudyGroups } = useAppData();
+  const { profile, welcomers, bibleStudyGroups, profiles } = useAppData();
 
   const [visitor, setVisitor] = useState<Visitor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,8 +120,12 @@ export default function VisitorDetailPage() {
   }
 
   async function updateWeekNotes(week: 1 | 2 | 3, notes: string) {
-    const field = `week${week}_notes` as const;
-    await updateField({ [field]: notes || null });
+    const notesField = `week${week}_notes` as const;
+    const authorField = `week${week}_notes_by` as const;
+    await updateField({
+      [notesField]: notes || null,
+      [authorField]: notes.trim() ? profile?.id ?? null : null,
+    });
   }
 
   async function handleBibleStudyOutcome(
@@ -253,7 +257,7 @@ export default function VisitorDetailPage() {
         {(visitor.email || visitor.phone_number) && (
           <div className="card p-4 flex flex-col gap-2">
             {visitor.email && (
-              <a
+              
                 href={`mailto:${visitor.email}`}
                 className="flex items-center gap-2 text-body text-primary"
               >
@@ -261,7 +265,7 @@ export default function VisitorDetailPage() {
               </a>
             )}
             {visitor.phone_number && (
-              <a
+              
                 href={`tel:${visitor.phone_number}`}
                 className="flex items-center gap-2 text-body text-primary"
               >
@@ -281,6 +285,11 @@ export default function VisitorDetailPage() {
                 attended={visitor.week1_attended}
                 date={visitor.week1_date}
                 notes={visitor.week1_notes}
+                authorName={
+                  visitor.week1_notes_by
+                    ? profiles.find((p) => p.id === visitor.week1_notes_by)?.full_name
+                    : undefined
+                }
                 disabled={saving}
                 onToggle={(v) => markWeek(1, v)}
                 onNotesBlur={(n) => updateWeekNotes(1, n)}
@@ -290,6 +299,11 @@ export default function VisitorDetailPage() {
                 attended={visitor.week2_attended}
                 date={visitor.week2_date}
                 notes={visitor.week2_notes}
+                authorName={
+                  visitor.week2_notes_by
+                    ? profiles.find((p) => p.id === visitor.week2_notes_by)?.full_name
+                    : undefined
+                }
                 disabled={saving}
                 onToggle={(v) => markWeek(2, v)}
                 onNotesBlur={(n) => updateWeekNotes(2, n)}
@@ -299,6 +313,11 @@ export default function VisitorDetailPage() {
                 attended={visitor.week3_attended}
                 date={visitor.week3_date}
                 notes={visitor.week3_notes}
+                authorName={
+                  visitor.week3_notes_by
+                    ? profiles.find((p) => p.id === visitor.week3_notes_by)?.full_name
+                    : undefined
+                }
                 disabled={saving}
                 onToggle={(v) => markWeek(3, v)}
                 onNotesBlur={(n) => updateWeekNotes(3, n)}
@@ -429,6 +448,21 @@ export default function VisitorDetailPage() {
         {visitor.status !== "Archived" && (
           <div className="card p-4 space-y-3">
             <h4 className="mb-1">Details</h4>
+            <div>
+              <label className="label-field" htmlFor="dateFirstAttendedEdit">
+                Date first attended
+              </label>
+              <input
+                id="dateFirstAttendedEdit"
+                type="date"
+                className="input-field"
+                value={visitor.date_first_attended}
+                disabled={saving}
+                onChange={(e) =>
+                  updateField({ date_first_attended: e.target.value })
+                }
+              />
+            </div>
             <div>
               <label className="label-field" htmlFor="reasonEdit">
                 Reason for attendance
@@ -620,6 +654,7 @@ function WeekRow({
   attended,
   date,
   notes,
+  authorName,
   disabled,
   onToggle,
   onNotesBlur,
@@ -628,6 +663,7 @@ function WeekRow({
   attended: boolean;
   date: string | null;
   notes: string | null;
+  authorName?: string;
   disabled: boolean;
   onToggle: (attended: boolean) => void;
   onNotesBlur: (notes: string) => void;
@@ -662,6 +698,9 @@ function WeekRow({
         placeholder={`Week ${weekNum} notes…`}
         onBlur={(e) => onNotesBlur(e.target.value)}
       />
+      {authorName && (
+        <p className="text-caption text-textSecondary mt-1">Noted by {authorName}</p>
+      )}
     </div>
   );
 }
