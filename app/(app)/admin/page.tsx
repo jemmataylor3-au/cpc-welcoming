@@ -3,10 +3,20 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { format } from "date-fns";
+import { SERVICE_OPTIONS } from "@/types/database";
 import { useAppData } from "@/lib/hooks/useAppData";
 import { PageHeader } from "@/components/PageHeader";
-import { ChevronLeft, Trash2, Plus } from "lucide-react";
-import type { Welcomer, BibleStudyGroup, Profile, EmailTemplate } from "@/types/database";
+import { ChevronLeft, Trash2, Plus, RefreshCw } from "lucide-react";
+import type {
+  Welcomer,
+  BibleStudyGroup,
+  Profile,
+  EmailTemplate,
+  EmailLogEntry,
+  NotificationRecipient,
+  ChurchService,
+} from "@/types/database";
 
 const SUGGESTED_COLORS = [
   "#103349", // navy
@@ -67,11 +77,13 @@ export default function AdminPage() {
         <UsersSection supabase={supabase} welcomers={welcomers} />
         <WelcomersSection welcomers={welcomers} supabase={supabase} refresh={refresh} />
         <EmailTemplatesSection supabase={supabase} />
+        <EmailLogSection supabase={supabase} />
         <BibleStudyGroupsSection
           groups={bibleStudyGroups}
           supabase={supabase}
           refresh={refresh}
         />
+        <NotificationRecipientsSection supabase={supabase} />
         <SettingsSection settings={settings} supabase={supabase} refresh={refresh} />
       </div>
     </div>
@@ -260,17 +272,11 @@ function SettingsSection({
   supabase: ReturnType<typeof createClient>;
   refresh: () => Promise<void>;
 }) {
-  const [ministerEmail, setMinisterEmail] = useState(settings.minister_email ?? "");
-  const [ministerEmail2, setMinisterEmail2] = useState(settings.minister_email_2 ?? "");
-  const [yaWorkerEmail, setYaWorkerEmail] = useState(settings.ya_worker_email ?? "");
   const [churchName, setChurchName] = useState(settings.church_name ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setMinisterEmail(settings.minister_email ?? "");
-    setMinisterEmail2(settings.minister_email_2 ?? "");
-    setYaWorkerEmail(settings.ya_worker_email ?? "");
     setChurchName(settings.church_name ?? "");
   }, [settings]);
 
@@ -279,18 +285,6 @@ function SettingsSection({
     setSaving(true);
     setSaved(false);
     await Promise.all([
-      supabase
-        .from("app_settings")
-        .update({ value: ministerEmail })
-        .eq("key", "minister_email"),
-      supabase
-        .from("app_settings")
-        .update({ value: ministerEmail2 })
-        .eq("key", "minister_email_2"),
-      supabase
-        .from("app_settings")
-        .update({ value: yaWorkerEmail })
-        .eq("key", "ya_worker_email"),
       supabase
         .from("app_settings")
         .update({ value: churchName })
@@ -315,43 +309,6 @@ function SettingsSection({
             className="input-field"
             value={churchName}
             onChange={(e) => setChurchName(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="label-field" htmlFor="ministerEmail">
-            Minister email (3-week & Bible study prompts)
-          </label>
-          <input
-            id="ministerEmail"
-            type="email"
-            className="input-field"
-            value={ministerEmail}
-            onChange={(e) => setMinisterEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="label-field" htmlFor="ministerEmail2">
-            Second minister email (optional)
-          </label>
-          <input
-            id="ministerEmail2"
-            type="email"
-            className="input-field"
-            value={ministerEmail2}
-            onChange={(e) => setMinisterEmail2(e.target.value)}
-            placeholder="Leave blank if not needed"
-          />
-        </div>
-        <div>
-          <label className="label-field" htmlFor="yaWorkerEmail">
-            YA worker email (for Young Adults visitors)
-          </label>
-          <input
-            id="yaWorkerEmail"
-            type="email"
-            className="input-field"
-            value={yaWorkerEmail}
-            onChange={(e) => setYaWorkerEmail(e.target.value)}
           />
         </div>
         <button type="submit" className="btn-primary w-full" disabled={saving}>
@@ -612,6 +569,289 @@ function EmailTemplatesSection({ supabase }: { supabase: ReturnType<typeof creat
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+
+// Friendly names for the email_type values written by the Edge Functions.
+const EMAIL_TYPE_LABELS: Record<string, string> = {
+  "3_week_prompt": "3-week check-in",
+  bible_study_reminder: "Bible study follow-up",
+  welcomer_nudge: "Welcomer nudge",
+  weekly_digest: "Weekly digest",
+  weekly_log_reminder_1: "Weekly log reminder (1st)",
+  weekly_log_reminder_2: "Weekly log reminder (2nd)",
+  weekly_log_reminder_3: "Weekly log reminder (final)",
+};
+
+function EmailLogSection({ supabase }: { supabase: ReturnType<typeof createClient> }) {
+  const [entries, setEntries] = useState<EmailLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showFailedOnly, setShowFailedOnly] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("email_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    setEntries((data as EmailLogEntry[]) ?? []);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const failedCount = entries.filter((e) => e.status !== "sent").length;
+  const shown = showFailedOnly ? entries.filter((e) => e.status !== "sent") : entries;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3>Sent emails</h3>
+        <button
+          type="button"
+          onClick={load}
+          className="w-10 h-10 flex items-center justify-center text-textSecondary"
+          aria-label="Refresh email log"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="card p-4">
+        {loading && <p className="text-body text-textSecondary">Loading…</p>}
+
+        {!loading && entries.length === 0 && (
+          <p className="text-body text-textSecondary">
+            No automated emails have been sent yet. They start going out once
+            visitors hit the relevant milestones — and once a sending domain is
+            verified in Resend, they'll reach everyone rather than just your own
+            inbox.
+          </p>
+        )}
+
+        {!loading && entries.length > 0 && (
+          <>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-small text-textSecondary">
+                Last {entries.length} attempts
+                {failedCount > 0 && ` · ${failedCount} failed`}
+              </p>
+              {failedCount > 0 && (
+                <button
+                  type="button"
+                  className="text-small text-primary underline underline-offset-2"
+                  onClick={() => setShowFailedOnly(!showFailedOnly)}
+                >
+                  {showFailedOnly ? "Show all" : "Failed only"}
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {shown.map((e) => (
+                <div key={e.id} className="border-b border-border last:border-0 pb-3 last:pb-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-body text-textPrimary">
+                        {EMAIL_TYPE_LABELS[e.email_type] ?? e.email_type}
+                      </p>
+                      <p className="text-small text-textSecondary truncate">{e.recipient}</p>
+                    </div>
+                    <span
+                      className={`tag shrink-0 ${
+                        e.status === "sent"
+                          ? "bg-green/20 text-navy"
+                          : "bg-error/15 text-error"
+                      }`}
+                    >
+                      {e.status === "sent" ? "Sent" : "Failed"}
+                    </span>
+                  </div>
+                  <p className="text-caption text-textSecondary mt-1">
+                    {format(new Date(e.created_at), "d MMM yyyy, h:mm a")}
+                  </p>
+                  {e.error_message && (
+                    <p className="text-small text-error mt-1 break-words">{e.error_message}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function NotificationRecipientsSection({
+  supabase,
+}: {
+  supabase: ReturnType<typeof createClient>;
+}) {
+  const [recipients, setRecipients] = useState<NotificationRecipient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("notification_recipients")
+      .select("*")
+      .eq("active", true)
+      .order("name");
+    setRecipients((data as NotificationRecipient[]) ?? []);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function update(id: string, fields: Partial<NotificationRecipient>) {
+    setSavingId(id);
+    await supabase.from("notification_recipients").update(fields).eq("id", id);
+    await load();
+    setSavingId(null);
+  }
+
+  async function toggleService(r: NotificationRecipient, service: ChurchService) {
+    const current = r.services ?? [];
+    const next = current.includes(service)
+      ? current.filter((s) => s !== service)
+      : [...current, service];
+    await update(r.id, { services: next });
+  }
+
+  async function addRecipient(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    await supabase
+      .from("notification_recipients")
+      .insert({ name: newName.trim(), email: "", services: [] });
+    setNewName("");
+    await load();
+  }
+
+  async function removeRecipient(id: string) {
+    await supabase.from("notification_recipients").update({ active: false }).eq("id", id);
+    await load();
+  }
+
+  const missingEmails = recipients.filter((r) => !r.email?.trim());
+
+  return (
+    <div>
+      <h3 className="mb-1">Notification recipients</h3>
+      <p className="text-small text-textSecondary mb-3">
+        Who gets the 3-week and Bible study prompts. Tick the services each
+        person covers. "All Young Adults" also sends them every Young Adult
+        visitor, whichever service that visitor attended.
+      </p>
+
+      {!loading && missingEmails.length > 0 && (
+        <div className="card p-4 mb-3 border-warning/40 bg-warning/5">
+          <p className="text-body text-textPrimary">
+            {missingEmails.map((r) => r.name).join(", ")}{" "}
+            {missingEmails.length === 1 ? "has" : "have"} no email address yet, so{" "}
+            {missingEmails.length === 1 ? "they won't" : "they won't"} receive
+            anything. Add {missingEmails.length === 1 ? "it" : "them"} below.
+          </p>
+        </div>
+      )}
+
+      {loading && <p className="text-body text-textSecondary">Loading…</p>}
+
+      <div className="space-y-3 mb-3">
+        {recipients.map((r) => (
+          <div key={r.id} className="card p-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <p className="text-h4 text-textPrimary">{r.name}</p>
+              <button
+                className="w-9 h-9 flex items-center justify-center text-textSecondary hover:text-error shrink-0"
+                onClick={() => removeRecipient(r.id)}
+                aria-label={`Remove ${r.name}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            <label className="label-field">Email</label>
+            <input
+              type="email"
+              className="input-field mb-3"
+              defaultValue={r.email ?? ""}
+              disabled={savingId === r.id}
+              placeholder="name@example.org"
+              onBlur={(e) => {
+                if (e.target.value !== (r.email ?? "")) {
+                  update(r.id, { email: e.target.value.trim() });
+                }
+              }}
+            />
+
+            <span className="label-field">Services covered</span>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {SERVICE_OPTIONS.map((s) => {
+                const on = (r.services ?? []).includes(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={savingId === r.id}
+                    onClick={() => toggleService(r, s)}
+                    className={`tag border ${
+                      on
+                        ? "bg-primary text-white border-primary"
+                        : "bg-surface text-textSecondary border-border"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                className="w-5 h-5 rounded accent-primary"
+                checked={r.all_young_adults}
+                disabled={savingId === r.id}
+                onChange={(e) => update(r.id, { all_young_adults: e.target.checked })}
+              />
+              <span className="text-body">
+                Also send all Young Adult visitors, any service
+              </span>
+            </label>
+          </div>
+        ))}
+      </div>
+
+      <form onSubmit={addRecipient} className="card p-4 space-y-3">
+        <div>
+          <label className="label-field" htmlFor="newRecipientName">
+            Add recipient
+          </label>
+          <input
+            id="newRecipientName"
+            className="input-field"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Name"
+          />
+        </div>
+        <button type="submit" className="btn-secondary w-full">
+          <Plus className="w-4 h-4" />
+          Add recipient
+        </button>
+      </form>
     </div>
   );
 }

@@ -8,13 +8,20 @@ import {
   useCallback,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, Welcomer, BibleStudyGroup, AppSetting } from "@/types/database";
+import type {
+  Profile,
+  Welcomer,
+  BibleStudyGroup,
+  AppSetting,
+  NotificationRecipient,
+} from "@/types/database";
 
 interface AppDataContextValue {
   profile: Profile | null;
   welcomers: Welcomer[];
   bibleStudyGroups: BibleStudyGroup[];
   profiles: Profile[];
+  notificationRecipients: NotificationRecipient[];
   settings: Record<string, string>;
   loading: boolean;
   refresh: () => Promise<void>;
@@ -28,6 +35,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [welcomers, setWelcomers] = useState<Welcomer[]>([]);
   const [bibleStudyGroups, setBibleStudyGroups] = useState<BibleStudyGroup[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [notificationRecipients, setNotificationRecipients] = useState<
+    NotificationRecipient[]
+  >([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
@@ -43,7 +53,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const [profileRes, welcomersRes, groupsRes, settingsRes, profilesRes] = await Promise.all([
+    const [
+      profileRes,
+      welcomersRes,
+      groupsRes,
+      settingsRes,
+      profilesRes,
+      recipientsRes,
+    ] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).single(),
       supabase.from("welcomers").select("*").eq("active", true).order("name"),
       supabase
@@ -55,12 +72,20 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       // Full profile list — used to show "who wrote this note" attribution,
       // which can be any team member, not just the assigned welcomer.
       supabase.from("profiles").select("*").order("full_name"),
+      supabase
+        .from("notification_recipients")
+        .select("*")
+        .eq("active", true)
+        .order("name"),
     ]);
 
     setProfile((profileRes.data as Profile) ?? null);
     setWelcomers((welcomersRes.data as Welcomer[]) ?? []);
     setBibleStudyGroups((groupsRes.data as BibleStudyGroup[]) ?? []);
     setProfiles((profilesRes.data as Profile[]) ?? []);
+    setNotificationRecipients(
+      (recipientsRes.data as NotificationRecipient[]) ?? []
+    );
 
     const settingsMap: Record<string, string> = {};
     ((settingsRes.data as AppSetting[]) ?? []).forEach((s) => {
@@ -83,7 +108,16 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppDataContext.Provider
-      value={{ profile, welcomers, bibleStudyGroups, profiles, settings, loading, refresh }}
+      value={{
+        profile,
+        welcomers,
+        bibleStudyGroups,
+        profiles,
+        notificationRecipients,
+        settings,
+        loading,
+        refresh,
+      }}
     >
       {children}
     </AppDataContext.Provider>

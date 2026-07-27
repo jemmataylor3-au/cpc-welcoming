@@ -13,6 +13,7 @@ import {
   logEmail,
   emailWrapper,
   escapeHtml,
+  resolveRecipients,
   renderTemplate,
   templateBodyToHtml,
   corsHeaders,
@@ -32,9 +33,6 @@ Deno.serve(async (req) => {
       "church_name",
       "Charlestown Presbyterian Church"
     );
-    const ministerEmail = await getSetting(supabase, "minister_email");
-    const ministerEmail2 = await getSetting(supabase, "minister_email_2");
-    const yaWorkerEmail = await getSetting(supabase, "ya_worker_email");
 
     const { data: visitors, error } = await supabase.rpc(
       "visitors_due_three_week_prompt"
@@ -43,13 +41,22 @@ Deno.serve(async (req) => {
     if (error) throw error;
 
     for (const visitor of visitors ?? []) {
-      // YA visitors go to the YA worker; everyone else goes to the
-      // minister(s). A blank second minister is simply skipped.
-      const recipients =
-        visitor.age_category === "Young Adults (YA)"
-          ? [yaWorkerEmail]
-          : [ministerEmail, ministerEmail2];
-      const recipient = recipients.filter(Boolean).join(", ");
+      const recipientList = await resolveRecipients(
+        supabase,
+        visitor.service,
+        visitor.age_category
+      );
+
+      if (recipientList.length === 0) {
+        results.push({
+          visitor: visitor.name,
+          status: "skipped",
+          reason: "No notification recipient covers this service — set one up in Admin.",
+        });
+        continue;
+      }
+
+      const recipient = recipientList.join(", ");
 
       const rendered = await renderTemplate(
         supabase,

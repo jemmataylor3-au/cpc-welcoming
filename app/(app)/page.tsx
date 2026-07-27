@@ -7,7 +7,16 @@ import { PageHeader } from "@/components/PageHeader";
 import { Users, UserCheck, Archive, PlusCircle, CheckCircle, UserPlus } from "lucide-react";
 import { useAppData } from "@/lib/hooks/useAppData";
 import type { AgeCategory, VisitorStatus, ChurchService } from "@/types/database";
-import { SERVICE_OPTIONS } from "@/types/database";
+import { SERVICE_OPTIONS, AGE_CATEGORY_OPTIONS } from "@/types/database";
+
+// Age categories are configurable, so build the zeroed tally from the
+// options list rather than hardcoding a fixed three.
+function emptyAgeCounts(): Record<AgeCategory, number> {
+  return Object.fromEntries(AGE_CATEGORY_OPTIONS.map((a) => [a, 0])) as Record<
+    AgeCategory,
+    number
+  >;
+}
 
 interface Counts {
   byStatus: Record<VisitorStatus, number>;
@@ -18,7 +27,7 @@ interface Counts {
 
 const EMPTY_COUNTS: Counts = {
   byStatus: { Active: 0, Settled: 0, Archived: 0 },
-  byAge: { Youth: 0, "Young Adults (YA)": 0, "Over 30": 0 },
+  byAge: emptyAgeCounts(),
   byService: { Swansea: 0, "Charlestown AM": 0, "Sunday@6": 0 },
   total: 0,
 };
@@ -42,7 +51,7 @@ export default function DashboardPage() {
       if (!error && data) {
         const next: Counts = {
           byStatus: { Active: 0, Settled: 0, Archived: 0 },
-          byAge: { Youth: 0, "Young Adults (YA)": 0, "Over 30": 0 },
+          byAge: emptyAgeCounts(),
           byService: { Swansea: 0, "Charlestown AM": 0, "Sunday@6": 0 },
           total: data.length,
         };
@@ -167,13 +176,11 @@ export default function DashboardPage() {
 
         <h3 className="mb-3">By age category</h3>
         <div className="card p-4 space-y-3 mb-6">
-          <AgeRow label="Youth" value={counts.byAge.Youth} loading={loading} />
-          <AgeRow
-            label="Young Adults (YA)"
-            value={counts.byAge["Young Adults (YA)"]}
-            loading={loading}
-          />
-          <AgeRow label="Over 30" value={counts.byAge["Over 30"]} loading={loading} />
+          {AGE_CATEGORY_OPTIONS.filter(
+            (a) => a !== "Over 30" || counts.byAge["Over 30"] > 0
+          ).map((a) => (
+            <AgeRow key={a} label={a} value={counts.byAge[a]} loading={loading} />
+          ))}
         </div>
 
         <h3 className="mb-3">By service</h3>

@@ -12,7 +12,14 @@ export type ReasonForAttendance =
   | "Just visiting"
   | "Other";
 
-export type AgeCategory = "Youth" | "Young Adults (YA)" | "Over 30";
+export type AgeCategory =
+  | "Youth"
+  | "Young Adult"
+  | "Young Family"
+  | "Established Family"
+  | "Midlife / Empty Nester"
+  | "Senior"
+  | "Over 30";
 
 export type ChurchService = "Swansea" | "Charlestown AM" | "Sunday@6";
 
@@ -153,6 +160,26 @@ export interface VisitPeriod {
   created_at: string;
 }
 
+export interface NotificationRecipient {
+  id: string;
+  name: string;
+  email: string | null;
+  services: ChurchService[];
+  all_young_adults: boolean;
+  active: boolean;
+  created_at: string;
+}
+
+export interface EmailLogEntry {
+  id: string;
+  visitor_id: string | null;
+  email_type: string;
+  recipient: string;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+}
+
 export interface EmailTemplate {
   key: string;
   label: string;
@@ -188,7 +215,13 @@ export const REASON_OPTIONS: ReasonForAttendance[] = [
 
 export const AGE_CATEGORY_OPTIONS: AgeCategory[] = [
   "Youth",
-  "Young Adults (YA)",
+  "Young Adult",
+  "Young Family",
+  "Established Family",
+  "Midlife / Empty Nester",
+  "Senior",
+  // Legacy bucket from the original spreadsheet import. Kept so existing
+  // records stay truthfully labelled until recategorised by hand.
   "Over 30",
 ];
 

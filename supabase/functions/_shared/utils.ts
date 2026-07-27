@@ -141,6 +141,54 @@ export function escapeHtml(input: string) {
   return input.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+interface RecipientRow {
+  name: string;
+  email: string | null;
+  services: string[];
+  all_young_adults: boolean;
+}
+
+/**
+ * Works out who should receive a prompt about a given visitor.
+ *
+ * Routing rules (managed in Admin -> Notification recipients):
+ *   - anyone whose `services` list includes the visitor's service, plus
+ *   - anyone with `all_young_adults` set, if the visitor is a Young Adult
+ *     (regardless of which service they attended).
+ *
+ * Rows with a blank email are skipped, so a recipient can be configured
+ * ahead of their address being known without silently breaking sends.
+ * Returns de-duplicated addresses.
+ */
+export async function resolveRecipients(
+  supabase: ReturnType<typeof getServiceClient>,
+  service: string,
+  ageCategory: string
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("notification_recipients")
+    .select("name, email, services, all_young_adults")
+    .eq("active", true);
+
+  if (error) throw error;
+
+  const isYoungAdult = ageCategory === "Young Adult";
+
+  const matched = ((data as RecipientRow[]) ?? []).filter((r) => {
+    const coversService = Array.isArray(r.services) && r.services.includes(service);
+    const coversYoungAdults = r.all_young_adults && isYoungAdult;
+    return coversService || coversYoungAdults;
+  });
+
+  return [
+    ...new Set(
+      matched
+        .map((r) => (r.email ?? "").trim())
+        .filter((e) => e.length > 0)
+    ),
+  ];
+}
+
 export function emailWrapper(bodyHtml: string, churchName: string) {
   return `
     <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #103349;">

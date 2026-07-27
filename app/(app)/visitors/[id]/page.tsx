@@ -8,7 +8,8 @@ import { useAppData } from "@/lib/hooks/useAppData";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusTag, AgeTag, WelcomerTag } from "@/components/Tag";
 import { WelcomerSelect } from "@/components/WelcomerSelect";
-import { ChevronLeft, Check, Mail, Phone, Archive, History, CheckCircle2, AlertTriangle, RotateCcw, Trash2 } from "lucide-react";
+import { SendPromptModal } from "@/components/SendPromptModal";
+import { ChevronLeft, Check, Mail, Phone, Archive, History, CheckCircle2, AlertTriangle, RotateCcw, Trash2, Send } from "lucide-react";
 import { format, differenceInCalendarDays } from "date-fns";
 import type {
   Visitor,
@@ -32,7 +33,14 @@ export default function VisitorDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const supabase = createClient();
-  const { profile, welcomers, bibleStudyGroups, profiles, settings } = useAppData();
+  const {
+    profile,
+    welcomers,
+    bibleStudyGroups,
+    profiles,
+    notificationRecipients,
+    settings,
+  } = useAppData();
 
   const [visitor, setVisitor] = useState<Visitor | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +53,7 @@ export default function VisitorDetailPage() {
   const [actorNames, setActorNames] = useState<Record<string, string>>({});
   const [visitPeriods, setVisitPeriods] = useState<VisitPeriod[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showSendPrompt, setShowSendPrompt] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -131,8 +140,20 @@ export default function VisitorDetailPage() {
     if (rpcError) {
       setError(rpcError.message);
     } else {
-      setVisitor(data as Visitor);
+      const updated = data as Visitor;
+      setVisitor(updated);
       loadActivityLog();
+
+      // The moment all three weeks are ticked, offer to notify — rather
+      // than leaving it to the overnight job with no visible confirmation.
+      if (
+        updated.week1_attended &&
+        updated.week2_attended &&
+        updated.week3_attended &&
+        !updated.three_week_prompt_sent_at
+      ) {
+        setShowSendPrompt(true);
+      }
     }
     setSaving(false);
   }
@@ -391,6 +412,35 @@ export default function VisitorDetailPage() {
             </div>
           </div>
         )}
+
+        {visitor.week1_attended &&
+          visitor.week2_attended &&
+          visitor.week3_attended && (
+            <div className="card p-4">
+              <h4 className="mb-1">3-week notification</h4>
+              {visitor.three_week_prompt_sent_at ? (
+                <p className="text-body text-textSecondary mb-3">
+                  Sent{" "}
+                  {format(
+                    new Date(visitor.three_week_prompt_sent_at),
+                    "d MMM yyyy, h:mm a"
+                  )}
+                  .
+                </p>
+              ) : (
+                <p className="text-body text-textSecondary mb-3">
+                  Not sent yet.
+                </p>
+              )}
+              <button
+                className="btn-secondary w-full"
+                onClick={() => setShowSendPrompt(true)}
+              >
+                <Send className="w-4 h-4" />
+                {visitor.three_week_prompt_sent_at ? "Send again" : "Send notification"}
+              </button>
+            </div>
+          )}
 
         {showArchivePrompt && !showArchiveForm && (
           <div className="card p-4 border-accent/40 bg-accent/5">
@@ -874,6 +924,18 @@ export default function VisitorDetailPage() {
           </button>
         )}
 
+        {showSendPrompt && (
+          <SendPromptModal
+            visitor={visitor}
+            recipients={notificationRecipients}
+            onClose={() => setShowSendPrompt(false)}
+            onSent={() => {
+              load();
+              loadActivityLog();
+            }}
+          />
+        )}
+
         {activityLog.length > 0 && (
           <div className="card p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -916,6 +978,7 @@ function formatActivityAction(action: string): string {
     bulk_comment: "Note added (bulk)",
     welcomer_reassigned: "Welcomer reassigned (bulk)",
     new_visit_period: "New visit period started",
+    prompt_sent: "3-week notification sent",
   };
   return labels[action] ?? action.replace(/_/g, " ");
 }

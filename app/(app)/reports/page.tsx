@@ -34,8 +34,12 @@ const SERVICE_COLORS: Record<ChurchService, string> = {
 
 const AGE_COLORS: Record<string, string> = {
   Youth: "#5DBE80", // green
-  "Young Adults (YA)": "#67BAB4", // teal
-  "Over 30": "#103349", // navy
+  "Young Adult": "#67BAB4", // teal
+  "Young Family": "#F1E0D8", // sand
+  "Established Family": "#ECBEB4", // clay
+  "Midlife / Empty Nester": "#CC9DBD", // orchid
+  Senior: "#AC8691", // mauve
+  "Over 30": "#53796E", // moss (legacy)
 };
 
 const MONTHS_BACK = 12;
