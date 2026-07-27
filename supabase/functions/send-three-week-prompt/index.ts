@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
       "Charlestown Presbyterian Church"
     );
     const ministerEmail = await getSetting(supabase, "minister_email");
+    const ministerEmail2 = await getSetting(supabase, "minister_email_2");
     const yaWorkerEmail = await getSetting(supabase, "ya_worker_email");
 
     const { data: visitors, error } = await supabase.rpc(
@@ -42,10 +43,13 @@ Deno.serve(async (req) => {
     if (error) throw error;
 
     for (const visitor of visitors ?? []) {
-      const recipient =
+      // YA visitors go to the YA worker; everyone else goes to the
+      // minister(s). A blank second minister is simply skipped.
+      const recipients =
         visitor.age_category === "Young Adults (YA)"
-          ? yaWorkerEmail
-          : ministerEmail;
+          ? [yaWorkerEmail]
+          : [ministerEmail, ministerEmail2];
+      const recipient = recipients.filter(Boolean).join(", ");
 
       const rendered = await renderTemplate(
         supabase,
@@ -62,7 +66,7 @@ Deno.serve(async (req) => {
 
       const html = emailWrapper(
         templateBodyToHtml(rendered.body) +
-          `<p style="color:#66727A; font-size: 13px;">First attended: ${visitor.date_first_attended} &middot; Age category: ${escapeHtml(visitor.age_category)} &middot; Reason: ${escapeHtml(visitor.reason_for_attendance)}</p>`,
+          `<p style="color:#53796E; font-size: 13px;">First attended: ${visitor.date_first_attended} &middot; Age category: ${escapeHtml(visitor.age_category)} &middot; Reason: ${escapeHtml(visitor.reason_for_attendance)}</p>`,
         churchName
       );
 

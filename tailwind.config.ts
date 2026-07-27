@@ -1,7 +1,12 @@
 import type { Config } from "tailwindcss";
 
-// Design tokens sourced from the CPC App Brand System document.
-// Do not introduce additional colours/fonts without updating that source of truth.
+// Design tokens from the Charlestown Presbyterian Church Style Guide
+// (August 2023, v1.1). Tagline: "Gospel Truth. God's Love. Real Change."
+//
+// Accessibility note carried over from the brand guide: green (#5DBE80)
+// and teal (#67BAB4) are mid-tone. White text on either fails WCAG AA for
+// body copy, so those two are used as backgrounds with navy/ink text, or
+// as small accents only — never as a background for white body text.
 const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -10,33 +15,56 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: "#172B3A", // Deep Navy
-        secondary: "#E8DED0", // Warm Sand
-        accent: "#C8755B", // Muted Terracotta
-        sage: "#A7B5A0", // Soft Sage
-        background: "#FAF9F6", // Warm White
+        // --- Primary palette ---
+        ink: "#0E1F27",
+        navy: "#103349",
+        moss: "#53796E",
+        green: "#5DBE80",
+        teal: "#67BAB4",
+        // --- Alternate palette (backgrounds / bridging tones) ---
+        sand: "#F1E0D8",
+        clay: "#ECBEB4",
+        mauve: "#AC8691",
+        orchid: "#CC9DBD",
+        wine: "#98454B",
+
+        // --- Semantic roles used throughout the app ---
+        primary: "#103349", // navy — nav, headers, primary buttons
+        secondary: "#F1E0D8", // sand — warm surfaces, tags
+        accent: "#5DBE80", // green — highlights, CTAs (navy text on it)
+        sage: "#67BAB4", // teal — secondary highlights
+        background: "#FDF9F7", // light sand tint — page background
         surface: "#FFFFFF",
-        textPrimary: "#263238", // Charcoal
-        textSecondary: "#66727A", // Slate
-        border: "#E4E2DD", // Soft Grey
-        success: "#5E8065",
+        textPrimary: "#103349", // navy, per guide's text-on-light
+        textSecondary: "#53796E", // moss — passes AA on white (~4.9:1)
+        border: "#E7DED9",
+
+        // --- System feedback (guide permits colours for system feedback) ---
+        success: "#5DBE80", // brand green
         warning: "#C28A45",
-        error: "#B85C5C",
+        error: "#98454B", // brand wine
       },
       fontFamily: {
-        display: ["var(--font-dm-serif)", "Georgia", "serif"],
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        // Two faces only, per the guide's max-two-fonts rule.
+        // League Spartan covers headings and UI chrome (buttons, labels,
+        // nav); Merriweather carries body prose.
+        display: ["var(--font-league-spartan)", "Helvetica Neue", "Arial", "sans-serif"],
+        sans: ["var(--font-league-spartan)", "Helvetica Neue", "Arial", "sans-serif"],
+        body: ["var(--font-merriweather)", "Georgia", "serif"],
       },
       fontSize: {
-        display: ["40px", { lineHeight: "44px", fontWeight: "400" }],
-        h1: ["32px", { lineHeight: "38px", fontWeight: "400" }],
-        h2: ["26px", { lineHeight: "32px", fontWeight: "400" }],
+        display: ["40px", { lineHeight: "44px", fontWeight: "700" }],
+        h1: ["32px", { lineHeight: "38px", fontWeight: "700" }],
+        h2: ["26px", { lineHeight: "32px", fontWeight: "700" }],
         h3: ["20px", { lineHeight: "26px", fontWeight: "600" }],
         h4: ["17px", { lineHeight: "23px", fontWeight: "600" }],
-        bodyLg: ["17px", { lineHeight: "26px", fontWeight: "400" }],
-        body: ["15px", { lineHeight: "23px", fontWeight: "400" }],
-        small: ["13px", { lineHeight: "18px", fontWeight: "400" }],
+        bodyLg: ["17px", { lineHeight: "27px", fontWeight: "400" }],
+        body: ["15px", { lineHeight: "24px", fontWeight: "400" }],
+        small: ["13px", { lineHeight: "19px", fontWeight: "400" }],
         caption: ["12px", { lineHeight: "16px", fontWeight: "500" }],
+      },
+      letterSpacing: {
+        eyebrow: "0.18em", // the "PRESBYTERIAN CHURCH" spaced-caps treatment
       },
       borderRadius: {
         sm: "6px",
@@ -47,7 +75,7 @@ const config: Config = {
         sheet: "20px",
       },
       boxShadow: {
-        card: "0 2px 8px rgba(23, 43, 58, 0.06)",
+        card: "0 2px 8px rgba(16, 51, 73, 0.07)",
       },
       spacing: {
         4.5: "18px",

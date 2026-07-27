@@ -11,11 +11,11 @@ import { format } from "date-fns";
 import { ARCHIVE_REASON_OPTIONS, type ChurchService, type ArchiveReasonCategory } from "@/types/database";
 
 const REASON_COLORS: Record<string, string> = {
-  "Moved away": "#C8755B",
-  "Joined another local church": "#A7B5A0",
-  "No longer responsive": "#66727A",
-  "Committed to another church": "#172B3A",
-  Other: "#C28A45",
+  "Moved away": "#67BAB4", // teal
+  "Joined another local church": "#5DBE80", // green
+  "No longer responsive": "#53796E", // moss
+  "Committed to another church": "#103349", // navy
+  Other: "#AC8691", // mauve
 };
 
 export default function ArchivedVisitorsPage() {
@@ -116,7 +116,7 @@ export default function ArchivedVisitorsPage() {
                         className="h-full rounded-full"
                         style={{
                           width: `${pct}%`,
-                          backgroundColor: REASON_COLORS[reason] ?? "#66727A",
+                          backgroundColor: REASON_COLORS[reason] ?? "#53796E",
                         }}
                       />
                     </div>
@@ -177,8 +177,8 @@ export default function ArchivedVisitorsPage() {
                 <span
                   className="tag mt-2 inline-block"
                   style={{
-                    backgroundColor: `${REASON_COLORS[v.archive_reason_category] ?? "#66727A"}26`,
-                    color: REASON_COLORS[v.archive_reason_category] ?? "#66727A",
+                    backgroundColor: `${REASON_COLORS[v.archive_reason_category] ?? "#53796E"}26`,
+                    color: REASON_COLORS[v.archive_reason_category] ?? "#53796E",
                   }}
                 >
                   {v.archive_reason_category}

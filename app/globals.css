@@ -7,8 +7,9 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    @apply bg-background text-textPrimary font-sans text-body antialiased;
+    @apply bg-background text-textPrimary font-body text-body antialiased;
   }
+  /* League Spartan for all headings, per the CPC style guide. */
   h1 {
     @apply font-display text-h1 text-textPrimary;
   }
@@ -16,12 +17,12 @@
     @apply font-display text-h2 text-textPrimary;
   }
   h3 {
-    @apply font-sans text-h3 text-textPrimary;
+    @apply font-display text-h3 text-textPrimary;
   }
   h4 {
-    @apply font-sans text-h4 text-textPrimary;
+    @apply font-display text-h4 text-textPrimary;
   }
-  /* Minimum 44x44px touch targets for interactive elements, per brand accessibility rules */
+  /* Minimum 44x44px touch targets for interactive elements */
   button,
   a,
   input,
@@ -35,35 +36,41 @@
 }
 
 @layer components {
+  /* Spaced-caps lockup treatment from the style guide */
+  .eyebrow {
+    @apply font-display uppercase tracking-eyebrow text-small font-medium;
+  }
+
   .card {
     @apply bg-surface border border-border rounded-card shadow-card;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 bg-primary text-white font-sans font-semibold text-body rounded-button h-12 px-5 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 bg-primary text-white font-display font-semibold text-body rounded-button h-12 px-5 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 bg-transparent text-primary font-sans font-semibold text-body rounded-button h-12 px-5 border border-primary transition-colors hover:bg-primary/5 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 bg-transparent text-primary font-display font-semibold text-body rounded-button h-12 px-5 border border-primary transition-colors hover:bg-primary/5 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
+  /* Green is mid-tone: navy text on it, never white (WCAG AA). */
   .btn-accent {
-    @apply inline-flex items-center justify-center gap-2 bg-accent text-white font-sans font-semibold text-body rounded-button h-12 px-5 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 bg-accent text-navy font-display font-semibold text-body rounded-button h-12 px-5 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 bg-error text-white font-sans font-semibold text-body rounded-button h-12 px-5 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 bg-error text-white font-display font-semibold text-body rounded-button h-12 px-5 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .input-field {
-    @apply w-full h-12 rounded-input border border-border bg-surface px-3.5 text-body text-textPrimary placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
+    @apply w-full h-12 rounded-input border border-border bg-surface px-3.5 font-body text-body text-textPrimary placeholder:text-textSecondary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
   }
 
   .label-field {
-    @apply block text-caption font-medium text-textSecondary mb-1.5 uppercase tracking-wide;
+    @apply block font-display text-caption font-semibold text-textSecondary mb-1.5 uppercase tracking-wide;
   }
 
   .tag {
-    @apply inline-flex items-center rounded-full px-2.5 py-1 text-caption font-medium;
+    @apply inline-flex items-center rounded-full px-2.5 py-1 font-display text-caption font-medium;
   }
 }

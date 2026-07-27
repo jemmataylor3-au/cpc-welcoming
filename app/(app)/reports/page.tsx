@@ -27,15 +27,15 @@ import {
 } from "@/types/database";
 
 const SERVICE_COLORS: Record<ChurchService, string> = {
-  Swansea: "#C8755B",
-  "Charlestown AM": "#172B3A",
-  "Sunday@6": "#A7B5A0",
+  Swansea: "#98454B", // wine
+  "Charlestown AM": "#103349", // navy
+  "Sunday@6": "#67BAB4", // teal
 };
 
 const AGE_COLORS: Record<string, string> = {
-  Youth: "#C8755B",
-  "Young Adults (YA)": "#A7B5A0",
-  "Over 30": "#172B3A",
+  Youth: "#5DBE80", // green
+  "Young Adults (YA)": "#67BAB4", // teal
+  "Over 30": "#103349", // navy
 };
 
 const MONTHS_BACK = 12;
@@ -142,18 +142,18 @@ export default function ReportsPage() {
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyTotals}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E4E2DD" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#66727A" }} />
-                    <YAxis tick={{ fontSize: 12, fill: "#66727A" }} allowDecimals={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E7DED9" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#53796E" }} />
+                    <YAxis tick={{ fontSize: 12, fill: "#53796E" }} allowDecimals={false} />
                     <Tooltip
-                      contentStyle={{ borderRadius: 10, border: "1px solid #E4E2DD", fontSize: 13 }}
+                      contentStyle={{ borderRadius: 10, border: "1px solid #E7DED9", fontSize: 13 }}
                     />
                     <Line
                       type="monotone"
                       dataKey="count"
-                      stroke="#172B3A"
+                      stroke="#103349"
                       strokeWidth={2}
-                      dot={{ fill: "#172B3A", r: 3 }}
+                      dot={{ fill: "#103349", r: 3 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -167,11 +167,11 @@ export default function ReportsPage() {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={monthlyByService}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E4E2DD" />
-                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#66727A" }} />
-                        <YAxis tick={{ fontSize: 12, fill: "#66727A" }} allowDecimals={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E7DED9" />
+                        <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#53796E" }} />
+                        <YAxis tick={{ fontSize: 12, fill: "#53796E" }} allowDecimals={false} />
                         <Tooltip
-                          contentStyle={{ borderRadius: 10, border: "1px solid #E4E2DD", fontSize: 13 }}
+                          contentStyle={{ borderRadius: 10, border: "1px solid #E7DED9", fontSize: 13 }}
                         />
                         <Legend wrapperStyle={{ fontSize: 12 }} />
                         {SERVICE_OPTIONS.map((s) => (
@@ -207,18 +207,18 @@ export default function ReportsPage() {
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={ageBreakdown} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E4E2DD" />
-                    <XAxis type="number" tick={{ fontSize: 12, fill: "#66727A" }} allowDecimals={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E7DED9" />
+                    <XAxis type="number" tick={{ fontSize: 12, fill: "#53796E" }} allowDecimals={false} />
                     <YAxis
                       dataKey="category"
                       type="category"
                       width={110}
-                      tick={{ fontSize: 12, fill: "#66727A" }}
+                      tick={{ fontSize: 12, fill: "#53796E" }}
                     />
                     <Tooltip
-                      contentStyle={{ borderRadius: 10, border: "1px solid #E4E2DD", fontSize: 13 }}
+                      contentStyle={{ borderRadius: 10, border: "1px solid #E7DED9", fontSize: 13 }}
                     />
-                    <Bar dataKey="count" fill="#172B3A" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="count" fill="#103349" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -245,18 +245,18 @@ export default function ReportsPage() {
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={reasonBreakdown} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E4E2DD" />
-                    <XAxis type="number" tick={{ fontSize: 12, fill: "#66727A" }} allowDecimals={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E7DED9" />
+                    <XAxis type="number" tick={{ fontSize: 12, fill: "#53796E" }} allowDecimals={false} />
                     <YAxis
                       dataKey="reason"
                       type="category"
                       width={140}
-                      tick={{ fontSize: 11, fill: "#66727A" }}
+                      tick={{ fontSize: 11, fill: "#53796E" }}
                     />
                     <Tooltip
-                      contentStyle={{ borderRadius: 10, border: "1px solid #E4E2DD", fontSize: 13 }}
+                      contentStyle={{ borderRadius: 10, border: "1px solid #E7DED9", fontSize: 13 }}
                     />
-                    <Bar dataKey="count" fill="#C8755B" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="count" fill="#53796E" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -271,18 +271,18 @@ export default function ReportsPage() {
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={archiveReasonBreakdown} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E4E2DD" />
-                      <XAxis type="number" tick={{ fontSize: 12, fill: "#66727A" }} allowDecimals={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E7DED9" />
+                      <XAxis type="number" tick={{ fontSize: 12, fill: "#53796E" }} allowDecimals={false} />
                       <YAxis
                         dataKey="reason"
                         type="category"
                         width={140}
-                        tick={{ fontSize: 11, fill: "#66727A" }}
+                        tick={{ fontSize: 11, fill: "#53796E" }}
                       />
                       <Tooltip
-                        contentStyle={{ borderRadius: 10, border: "1px solid #E4E2DD", fontSize: 13 }}
+                        contentStyle={{ borderRadius: 10, border: "1px solid #E7DED9", fontSize: 13 }}
                       />
-                      <Bar dataKey="count" fill="#B85C5C" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="count" fill="#53796E" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

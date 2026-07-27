@@ -143,14 +143,14 @@ export function escapeHtml(input: string) {
 
 export function emailWrapper(bodyHtml: string, churchName: string) {
   return `
-    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #263238;">
-      <div style="background:#172B3A; padding: 20px 24px; border-radius: 10px 10px 0 0;">
-        <span style="color:#FAF9F6; font-size: 18px; font-weight: 600;">${churchName}</span>
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #103349;">
+      <div style="background:#103349; padding: 20px 24px; border-radius: 10px 10px 0 0;">
+        <span style="color:#FDF9F7; font-size: 18px; font-weight: 600;">${churchName}</span>
       </div>
-      <div style="background:#FFFFFF; border: 1px solid #E4E2DD; border-top: none; padding: 24px; border-radius: 0 0 10px 10px;">
+      <div style="background:#FFFFFF; border: 1px solid #E7DED9; border-top: none; padding: 24px; border-radius: 0 0 10px 10px;">
         ${bodyHtml}
       </div>
-      <p style="color:#66727A; font-size: 12px; margin-top: 16px;">
+      <p style="color:#53796E; font-size: 12px; margin-top: 16px;">
         This is an automated message from the ${churchName} welcoming system.
       </p>
     </div>

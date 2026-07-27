@@ -9,15 +9,15 @@ import { ChevronLeft, Trash2, Plus } from "lucide-react";
 import type { Welcomer, BibleStudyGroup, Profile, EmailTemplate } from "@/types/database";
 
 const SUGGESTED_COLORS = [
-  "#C8755B", // terracotta
-  "#A7B5A0", // sage
-  "#172B3A", // navy
-  "#66727A", // slate
-  "#B85C5C", // error red (muted)
-  "#C28A45", // warning ochre
-  "#5E8065", // success green
-  "#8B7355", // brown
-];
+  "#103349", // navy
+  "#5DBE80", // green
+  "#67BAB4", // teal
+  "#53796E", // moss
+  "#98454B", // wine
+  "#AC8691", // mauve
+  "#CC9DBD", // orchid
+  "#0E1F27", // ink
+]
 
 export default function AdminPage() {
   const supabase = createClient();
@@ -64,7 +64,7 @@ export default function AdminPage() {
       />
 
       <div className="max-w-2xl mx-auto px-5 -mt-3 space-y-6">
-        <UsersSection supabase={supabase} />
+        <UsersSection supabase={supabase} welcomers={welcomers} />
         <WelcomersSection welcomers={welcomers} supabase={supabase} refresh={refresh} />
         <EmailTemplatesSection supabase={supabase} />
         <BibleStudyGroupsSection
@@ -261,6 +261,7 @@ function SettingsSection({
   refresh: () => Promise<void>;
 }) {
   const [ministerEmail, setMinisterEmail] = useState(settings.minister_email ?? "");
+  const [ministerEmail2, setMinisterEmail2] = useState(settings.minister_email_2 ?? "");
   const [yaWorkerEmail, setYaWorkerEmail] = useState(settings.ya_worker_email ?? "");
   const [churchName, setChurchName] = useState(settings.church_name ?? "");
   const [saving, setSaving] = useState(false);
@@ -268,6 +269,7 @@ function SettingsSection({
 
   useEffect(() => {
     setMinisterEmail(settings.minister_email ?? "");
+    setMinisterEmail2(settings.minister_email_2 ?? "");
     setYaWorkerEmail(settings.ya_worker_email ?? "");
     setChurchName(settings.church_name ?? "");
   }, [settings]);
@@ -281,6 +283,10 @@ function SettingsSection({
         .from("app_settings")
         .update({ value: ministerEmail })
         .eq("key", "minister_email"),
+      supabase
+        .from("app_settings")
+        .update({ value: ministerEmail2 })
+        .eq("key", "minister_email_2"),
       supabase
         .from("app_settings")
         .update({ value: yaWorkerEmail })
@@ -324,6 +330,19 @@ function SettingsSection({
           />
         </div>
         <div>
+          <label className="label-field" htmlFor="ministerEmail2">
+            Second minister email (optional)
+          </label>
+          <input
+            id="ministerEmail2"
+            type="email"
+            className="input-field"
+            value={ministerEmail2}
+            onChange={(e) => setMinisterEmail2(e.target.value)}
+            placeholder="Leave blank if not needed"
+          />
+        </div>
+        <div>
           <label className="label-field" htmlFor="yaWorkerEmail">
             YA worker email (for Young Adults visitors)
           </label>
@@ -348,7 +367,13 @@ function SettingsSection({
 }
 
 
-function UsersSection({ supabase }: { supabase: ReturnType<typeof createClient> }) {
+function UsersSection({
+  supabase,
+  welcomers,
+}: {
+  supabase: ReturnType<typeof createClient>;
+  welcomers: Welcomer[];
+}) {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -374,6 +399,19 @@ function UsersSection({ supabase }: { supabase: ReturnType<typeof createClient> 
   async function setRole(id: string, role: "admin" | "welcomer") {
     setSavingId(id);
     await supabase.from("profiles").update({ role }).eq("id", id);
+    await load();
+    setSavingId(null);
+  }
+
+  // Links a login to a welcomer name. This is what lets the automated
+  // "check in on this visitor" nudge know which inbox to email when a
+  // visitor assigned to that welcomer goes quiet.
+  async function setLinkedWelcomer(id: string, welcomerId: string) {
+    setSavingId(id);
+    await supabase
+      .from("profiles")
+      .update({ welcomer_id: welcomerId || null })
+      .eq("id", id);
     await load();
     setSavingId(null);
   }
@@ -415,23 +453,14 @@ function UsersSection({ supabase }: { supabase: ReturnType<typeof createClient> 
           <h4 className="mb-3">Approved ({approved.length})</h4>
           <div className="space-y-3">
             {approved.map((u) => (
-              <div key={u.id} className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-body text-textPrimary truncate">{u.full_name}</p>
-                  <p className="text-small text-textSecondary truncate">{u.email}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <select
-                    className="h-10 px-2 rounded-input border border-border bg-surface text-small"
-                    value={u.role}
-                    disabled={savingId === u.id}
-                    onChange={(e) => setRole(u.id, e.target.value as "admin" | "welcomer")}
-                  >
-                    <option value="welcomer">Welcomer</option>
-                    <option value="admin">Admin</option>
-                  </select>
+              <div key={u.id} className="border-b border-border last:border-0 pb-3 last:pb-0">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="min-w-0">
+                    <p className="text-body text-textPrimary truncate">{u.full_name}</p>
+                    <p className="text-small text-textSecondary truncate">{u.email}</p>
+                  </div>
                   <button
-                    className="w-9 h-9 flex items-center justify-center text-textSecondary hover:text-error"
+                    className="w-9 h-9 flex items-center justify-center text-textSecondary hover:text-error shrink-0"
                     disabled={savingId === u.id}
                     onClick={() => setApproved(u.id, false)}
                     aria-label={`Revoke access for ${u.full_name}`}
@@ -439,12 +468,49 @@ function UsersSection({ supabase }: { supabase: ReturnType<typeof createClient> 
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="label-field">Permissions</label>
+                    <select
+                      className="input-field h-10 text-small"
+                      value={u.role}
+                      disabled={savingId === u.id}
+                      onChange={(e) => setRole(u.id, e.target.value as "admin" | "welcomer")}
+                    >
+                      <option value="welcomer">Welcomer</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label-field">Welcomer name</label>
+                    <select
+                      className="input-field h-10 text-small"
+                      value={u.welcomer_id ?? ""}
+                      disabled={savingId === u.id}
+                      onChange={(e) => setLinkedWelcomer(u.id, e.target.value)}
+                    >
+                      <option value="">Not linked</option>
+                      {welcomers.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
           <p className="text-small text-textSecondary mt-3">
-            Revoking access keeps the account but blocks it from seeing any data
-            until approved again.
+            <strong>Permissions</strong> controls what they can do in the app —
+            admins additionally get this settings screen and can delete visitors.
+            <br />
+            <strong>Welcomer name</strong> links this login to a name from the
+            welcomer list, so automated "check in on this visitor" reminders
+            reach the right inbox.
+            <br />
+            Revoking access (bin icon) keeps the account but blocks it from
+            seeing any data until approved again.
           </p>
         </div>
       )}
