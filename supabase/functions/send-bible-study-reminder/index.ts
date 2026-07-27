@@ -11,6 +11,8 @@ import {
   sendEmail,
   logEmail,
   emailWrapper,
+  renderTemplate,
+  templateBodyToHtml,
   corsHeaders,
 } from "../_shared/utils.ts";
 
@@ -42,26 +44,22 @@ Deno.serve(async (req) => {
           ? yaWorkerEmail
           : ministerEmail;
 
-      const html = emailWrapper(
-        `
-          <h2 style="font-family: Georgia, serif; color:#172B3A; font-weight:400;">Bible study follow-up: ${escapeHtml(
-            visitor.name
-          )}</h2>
-          <p>
-            It's been 6 weeks since ${escapeHtml(visitor.name)} was marked
-            "Not Yet" for Bible study. Worth a follow-up to see if they'd
-            like to join a group now?
-          </p>
-        `,
-        churchName
+      const rendered = await renderTemplate(
+        supabase,
+        "bible_study_reminder",
+        { visitor_name: visitor.name, church_name: churchName },
+        {
+          subject: "Bible study follow-up: {{visitor_name}}",
+          body:
+            "It has been 6 weeks since {{visitor_name}} was marked \"Not Yet\" for Bible study. " +
+            "Worth a follow-up to see if they would like to join a group now?",
+        }
       );
 
+      const html = emailWrapper(templateBodyToHtml(rendered.body), churchName);
+
       try {
-        await sendEmail({
-          to: recipient,
-          subject: `Bible study follow-up: ${visitor.name}`,
-          html,
-        });
+        await sendEmail({ to: recipient, subject: rendered.subject, html });
         await logEmail(supabase, {
           visitorId: visitor.id,
           emailType: "bible_study_reminder",
@@ -104,9 +102,3 @@ Deno.serve(async (req) => {
   }
 });
 
-function escapeHtml(input: string) {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}

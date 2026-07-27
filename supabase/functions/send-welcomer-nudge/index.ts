@@ -11,6 +11,8 @@ import {
   sendEmail,
   logEmail,
   emailWrapper,
+  renderTemplate,
+  templateBodyToHtml,
   corsHeaders,
 } from "../_shared/utils.ts";
 
@@ -53,26 +55,22 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const html = emailWrapper(
-        `
-          <h2 style="font-family: Georgia, serif; color:#172B3A; font-weight:400;">Check in on ${escapeHtml(
-            visitor.name
-          )}?</h2>
-          <p>
-            ${escapeHtml(visitor.name)} hasn't attended in a while. Should
-            they be archived, or are they still connecting with the church?
-            You can update their status in the app.
-          </p>
-        `,
-        churchName
+      const rendered = await renderTemplate(
+        supabase,
+        "welcomer_nudge",
+        { visitor_name: visitor.name, church_name: churchName },
+        {
+          subject: "Check in on {{visitor_name}}?",
+          body:
+            "{{visitor_name}} has not attended in a while. Should they be archived, " +
+            "or are they still connecting with the church? You can update their status in the app.",
+        }
       );
 
+      const html = emailWrapper(templateBodyToHtml(rendered.body), churchName);
+
       try {
-        await sendEmail({
-          to: profile.email,
-          subject: `Check in on ${visitor.name}?`,
-          html,
-        });
+        await sendEmail({ to: profile.email, subject: rendered.subject, html });
         await logEmail(supabase, {
           visitorId: visitor.id,
           emailType: "welcomer_nudge",
@@ -113,9 +111,3 @@ Deno.serve(async (req) => {
   }
 });
 
-function escapeHtml(input: string) {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}

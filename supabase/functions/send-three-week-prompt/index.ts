@@ -12,6 +12,9 @@ import {
   sendEmail,
   logEmail,
   emailWrapper,
+  escapeHtml,
+  renderTemplate,
+  templateBodyToHtml,
   corsHeaders,
 } from "../_shared/utils.ts";
 
@@ -44,31 +47,27 @@ Deno.serve(async (req) => {
           ? yaWorkerEmail
           : ministerEmail;
 
+      const rendered = await renderTemplate(
+        supabase,
+        "three_week_prompt",
+        { visitor_name: visitor.name, church_name: churchName },
+        {
+          subject: "3-week check-in: {{visitor_name}}",
+          body:
+            "{{visitor_name}} has now attended three weeks in a row. Could you:\n\n" +
+            "- Add them to Elvanto\n" +
+            "- Reach out to invite them to a Bible study group",
+        }
+      );
+
       const html = emailWrapper(
-        `
-          <h2 style="font-family: Georgia, serif; color:#172B3A; font-weight:400;">3-week check-in: ${escapeHtml(
-            visitor.name
-          )}</h2>
-          <p>${escapeHtml(visitor.name)} has now attended three weeks in a row. Could you:</p>
-          <ul>
-            <li>Add them to Elvanto</li>
-            <li>Reach out to invite them to a Bible study group</li>
-          </ul>
-          <p style="color:#66727A; font-size: 13px;">
-            First attended: ${visitor.date_first_attended} &middot;
-            Age category: ${escapeHtml(visitor.age_category)} &middot;
-            Reason: ${escapeHtml(visitor.reason_for_attendance)}
-          </p>
-        `,
+        templateBodyToHtml(rendered.body) +
+          `<p style="color:#66727A; font-size: 13px;">First attended: ${visitor.date_first_attended} &middot; Age category: ${escapeHtml(visitor.age_category)} &middot; Reason: ${escapeHtml(visitor.reason_for_attendance)}</p>`,
         churchName
       );
 
       try {
-        await sendEmail({
-          to: recipient,
-          subject: `3-week check-in: ${visitor.name}`,
-          html,
-        });
+        await sendEmail({ to: recipient, subject: rendered.subject, html });
         await logEmail(supabase, {
           visitorId: visitor.id,
           emailType: "3_week_prompt",
@@ -109,9 +108,3 @@ Deno.serve(async (req) => {
   }
 });
 
-function escapeHtml(input: string) {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}

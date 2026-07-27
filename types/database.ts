@@ -36,6 +36,7 @@ export interface Profile {
   email: string;
   role: AppRole;
   welcomer_id: string | null;
+  approved: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -131,6 +132,35 @@ export interface ActivityLogEntry {
   action: string;
   detail: string | null;
   created_at: string;
+}
+
+export interface VisitPeriod {
+  id: string;
+  visitor_id: string;
+  period_number: number;
+  started_on: string | null;
+  week1_attended: boolean;
+  week1_date: string | null;
+  week1_notes: string | null;
+  week2_attended: boolean;
+  week2_date: string | null;
+  week2_notes: string | null;
+  week3_attended: boolean;
+  week3_date: string | null;
+  week3_notes: string | null;
+  closed_at: string;
+  closed_by: string | null;
+  created_at: string;
+}
+
+export interface EmailTemplate {
+  key: string;
+  label: string;
+  subject: string;
+  body: string;
+  description: string | null;
+  updated_at: string;
+  updated_by: string | null;
 }
 
 export interface PendingVisitor {

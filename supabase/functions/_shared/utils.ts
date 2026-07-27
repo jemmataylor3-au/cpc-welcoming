@@ -88,6 +88,59 @@ export async function logEmail(
   });
 }
 
+interface EmailTemplateRow {
+  subject: string;
+  body: string;
+}
+
+/**
+ * Loads an admin-editable email template and substitutes {{placeholders}}.
+ * Falls back to the supplied defaults if the template row is missing, so a
+ * deleted or renamed template can never stop an email from going out.
+ */
+export async function renderTemplate(
+  supabase: ReturnType<typeof getServiceClient>,
+  key: string,
+  vars: Record<string, string>,
+  fallback: EmailTemplateRow
+): Promise<EmailTemplateRow> {
+  const { data } = await supabase
+    .from("email_templates")
+    .select("subject, body")
+    .eq("key", key)
+    .maybeSingle();
+
+  const tpl = (data as EmailTemplateRow) ?? fallback;
+
+  const substitute = (text: string) =>
+    Object.entries(vars).reduce(
+      (acc, [k, v]) => acc.replaceAll(`{{${k}}}`, v),
+      text
+    );
+
+  return { subject: substitute(tpl.subject), body: substitute(tpl.body) };
+}
+
+/** Converts plain-text template bodies into simple HTML paragraphs/lists. */
+export function templateBodyToHtml(body: string): string {
+  return body
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return "";
+      if (trimmed.startsWith("- ")) {
+        return `<li>${escapeHtml(trimmed.slice(2))}</li>`;
+      }
+      return `<p>${escapeHtml(trimmed)}</p>`;
+    })
+    .join("")
+    .replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
+}
+
+export function escapeHtml(input: string) {
+  return input.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 export function emailWrapper(bodyHtml: string, churchName: string) {
   return `
     <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; color: #263238;">

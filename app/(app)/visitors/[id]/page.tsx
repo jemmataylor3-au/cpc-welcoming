@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAppData } from "@/lib/hooks/useAppData";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusTag, AgeTag, WelcomerTag } from "@/components/Tag";
 import { WelcomerSelect } from "@/components/WelcomerSelect";
-import { ChevronLeft, Check, Mail, Phone, Archive, History, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, Check, Mail, Phone, Archive, History, CheckCircle2, AlertTriangle, RotateCcw, Trash2 } from "lucide-react";
 import { format, differenceInCalendarDays } from "date-fns";
 import type {
   Visitor,
@@ -18,6 +18,7 @@ import type {
   ChurchService,
   ActivityLogEntry,
   ArchiveReasonCategory,
+  VisitPeriod,
 } from "@/types/database";
 import {
   REASON_OPTIONS,
@@ -29,6 +30,7 @@ import {
 
 export default function VisitorDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const supabase = createClient();
   const { profile, welcomers, bibleStudyGroups, profiles, settings } = useAppData();
 
@@ -41,6 +43,8 @@ export default function VisitorDetailPage() {
   const [archiveReasonText, setArchiveReasonText] = useState("");
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [actorNames, setActorNames] = useState<Record<string, string>>({});
+  const [visitPeriods, setVisitPeriods] = useState<VisitPeriod[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -81,10 +85,20 @@ export default function VisitorDetailPage() {
     }
   }, [supabase, params.id]);
 
+  const loadVisitPeriods = useCallback(async () => {
+    const { data } = await supabase
+      .from("visit_periods")
+      .select("*")
+      .eq("visitor_id", params.id)
+      .order("period_number", { ascending: false });
+    setVisitPeriods((data as VisitPeriod[]) ?? []);
+  }, [supabase, params.id]);
+
   useEffect(() => {
     load();
     loadActivityLog();
-  }, [load, loadActivityLog]);
+    loadVisitPeriods();
+  }, [load, loadActivityLog, loadVisitPeriods]);
 
   async function updateField(fields: Partial<Visitor>) {
     if (!visitor) return;
@@ -228,6 +242,41 @@ export default function VisitorDetailPage() {
     });
     await loadActivityLog();
     setShowArchiveForm(false);
+  }
+
+  async function startNewVisitPeriod() {
+    if (!visitor) return;
+    setSaving(true);
+    setError(null);
+    const { data, error: rpcError } = await supabase.rpc("start_new_visit_period", {
+      p_visitor_id: visitor.id,
+      p_actor_id: profile?.id ?? null,
+    });
+    if (rpcError) {
+      setError(rpcError.message);
+    } else {
+      setVisitor(data as Visitor);
+      await loadVisitPeriods();
+      await loadActivityLog();
+    }
+    setSaving(false);
+  }
+
+  async function handleDelete() {
+    if (!visitor) return;
+    setSaving(true);
+    setError(null);
+    const { error: deleteError } = await supabase.from("visitors").delete().eq("id", visitor.id);
+    if (deleteError) {
+      setError(
+        deleteError.message.includes("policy")
+          ? "Only admins can permanently delete a visitor."
+          : deleteError.message
+      );
+      setSaving(false);
+      return;
+    }
+    router.push("/visitors/active");
   }
 
   async function handleUnarchive() {
@@ -746,6 +795,85 @@ export default function VisitorDetailPage() {
           </button>
         )}
 
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <RotateCcw className="w-4 h-4 text-textSecondary" />
+            <h4>Visit periods</h4>
+          </div>
+          <p className="text-body text-textSecondary mb-3">
+            If {visitor.name} stopped coming and has now returned, start a new
+            period. Their current weeks are saved to history below and the
+            3-week count restarts from today.
+          </p>
+          <button
+            className="btn-secondary w-full"
+            onClick={startNewVisitPeriod}
+            disabled={saving}
+          >
+            Start a new visit period
+          </button>
+
+          {visitPeriods.length > 0 && (
+            <div className="mt-4 space-y-3 border-t border-border pt-4">
+              {visitPeriods.map((p) => (
+                <div key={p.id} className="border-l-2 border-border pl-3">
+                  <p className="text-h4 text-textPrimary">
+                    Period {p.period_number}
+                    {p.started_on && (
+                      <span className="text-small text-textSecondary font-normal">
+                        {" "}
+                        · from {format(new Date(p.started_on), "d MMM yyyy")}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-small text-textSecondary mb-1">
+                    {[p.week1_attended, p.week2_attended, p.week3_attended].filter(Boolean).length}{" "}
+                    of 3 weeks attended
+                  </p>
+                  {[p.week1_notes, p.week2_notes, p.week3_notes]
+                    .filter(Boolean)
+                    .map((note, i) => (
+                      <p key={i} className="text-body text-textSecondary">
+                        {note}
+                      </p>
+                    ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {confirmDelete ? (
+          <div className="card p-4 border-error/40 bg-error/5">
+            <h4 className="mb-2">Delete permanently?</h4>
+            <p className="text-body text-textSecondary mb-3">
+              This removes {visitor.name} and all their notes and history for
+              good. It can't be undone — use Archive instead if you just want
+              them out of the active list.
+            </p>
+            <div className="flex gap-3">
+              <button
+                className="btn-secondary flex-1"
+                onClick={() => setConfirmDelete(false)}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button className="btn-danger flex-1" onClick={handleDelete} disabled={saving}>
+                {saving ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="w-full flex items-center justify-center gap-2 h-12 text-body text-error"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete permanently
+          </button>
+        )}
+
         {activityLog.length > 0 && (
           <div className="card p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -787,6 +915,7 @@ function formatActivityAction(action: string): string {
     status_changed: "Status changed",
     bulk_comment: "Note added (bulk)",
     welcomer_reassigned: "Welcomer reassigned (bulk)",
+    new_visit_period: "New visit period started",
   };
   return labels[action] ?? action.replace(/_/g, " ");
 }

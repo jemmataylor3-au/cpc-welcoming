@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAppData } from "@/lib/hooks/useAppData";
 import { PageHeader } from "@/components/PageHeader";
 import { ChevronLeft, Trash2, Plus } from "lucide-react";
-import type { Welcomer, BibleStudyGroup } from "@/types/database";
+import type { Welcomer, BibleStudyGroup, Profile, EmailTemplate } from "@/types/database";
 
 const SUGGESTED_COLORS = [
   "#C8755B", // terracotta
@@ -64,7 +64,9 @@ export default function AdminPage() {
       />
 
       <div className="max-w-2xl mx-auto px-5 -mt-3 space-y-6">
+        <UsersSection supabase={supabase} />
         <WelcomersSection welcomers={welcomers} supabase={supabase} refresh={refresh} />
+        <EmailTemplatesSection supabase={supabase} />
         <BibleStudyGroupsSection
           groups={bibleStudyGroups}
           supabase={supabase}
@@ -341,6 +343,209 @@ function SettingsSection({
           server-side secrets, not here — see the README for setup.
         </p>
       </form>
+    </div>
+  );
+}
+
+
+function UsersSection({ supabase }: { supabase: ReturnType<typeof createClient> }) {
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase.from("profiles").select("*").order("full_name");
+    setUsers((data as Profile[]) ?? []);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function setApproved(id: string, approved: boolean) {
+    setSavingId(id);
+    await supabase.from("profiles").update({ approved }).eq("id", id);
+    await load();
+    setSavingId(null);
+  }
+
+  async function setRole(id: string, role: "admin" | "welcomer") {
+    setSavingId(id);
+    await supabase.from("profiles").update({ role }).eq("id", id);
+    await load();
+    setSavingId(null);
+  }
+
+  const pending = users.filter((u) => !u.approved);
+  const approved = users.filter((u) => u.approved);
+
+  return (
+    <div>
+      <h3 className="mb-3">Users</h3>
+
+      {loading && <p className="text-body text-textSecondary">Loading…</p>}
+
+      {!loading && pending.length > 0 && (
+        <div className="card p-4 mb-3 border-accent/40 bg-accent/5">
+          <h4 className="mb-3">Awaiting approval ({pending.length})</h4>
+          <div className="space-y-3">
+            {pending.map((u) => (
+              <div key={u.id} className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-body text-textPrimary truncate">{u.full_name}</p>
+                  <p className="text-small text-textSecondary truncate">{u.email}</p>
+                </div>
+                <button
+                  className="btn-primary h-10 px-4 shrink-0"
+                  disabled={savingId === u.id}
+                  onClick={() => setApproved(u.id, true)}
+                >
+                  Approve
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!loading && (
+        <div className="card p-4">
+          <h4 className="mb-3">Approved ({approved.length})</h4>
+          <div className="space-y-3">
+            {approved.map((u) => (
+              <div key={u.id} className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-body text-textPrimary truncate">{u.full_name}</p>
+                  <p className="text-small text-textSecondary truncate">{u.email}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <select
+                    className="h-10 px-2 rounded-input border border-border bg-surface text-small"
+                    value={u.role}
+                    disabled={savingId === u.id}
+                    onChange={(e) => setRole(u.id, e.target.value as "admin" | "welcomer")}
+                  >
+                    <option value="welcomer">Welcomer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <button
+                    className="w-9 h-9 flex items-center justify-center text-textSecondary hover:text-error"
+                    disabled={savingId === u.id}
+                    onClick={() => setApproved(u.id, false)}
+                    aria-label={`Revoke access for ${u.full_name}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-small text-textSecondary mt-3">
+            Revoking access keeps the account but blocks it from seeing any data
+            until approved again.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmailTemplatesSection({ supabase }: { supabase: ReturnType<typeof createClient> }) {
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [draftSubject, setDraftSubject] = useState("");
+  const [draftBody, setDraftBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase.from("email_templates").select("*").order("label");
+    setTemplates((data as EmailTemplate[]) ?? []);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  function openTemplate(t: EmailTemplate) {
+    setOpenKey(t.key);
+    setDraftSubject(t.subject);
+    setDraftBody(t.body);
+  }
+
+  async function save(key: string) {
+    setSaving(true);
+    await supabase
+      .from("email_templates")
+      .update({ subject: draftSubject, body: draftBody, updated_at: new Date().toISOString() })
+      .eq("key", key);
+    await load();
+    setSaving(false);
+    setOpenKey(null);
+    setSavedKey(key);
+    setTimeout(() => setSavedKey(null), 2500);
+  }
+
+  return (
+    <div>
+      <h3 className="mb-3">Email wording</h3>
+      {loading && <p className="text-body text-textSecondary">Loading…</p>}
+      <div className="space-y-3">
+        {templates.map((t) => (
+          <div key={t.key} className="card p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-h4 text-textPrimary">{t.label}</p>
+                {savedKey === t.key && (
+                  <p className="text-small text-success">Saved</p>
+                )}
+              </div>
+              <button
+                className="btn-secondary h-10 px-4 shrink-0"
+                onClick={() => (openKey === t.key ? setOpenKey(null) : openTemplate(t))}
+              >
+                {openKey === t.key ? "Close" : "Edit"}
+              </button>
+            </div>
+
+            {openKey === t.key && (
+              <div className="mt-4 space-y-3">
+                {t.description && (
+                  <p className="text-small text-textSecondary">{t.description}</p>
+                )}
+                <div>
+                  <label className="label-field">Subject</label>
+                  <input
+                    className="input-field"
+                    value={draftSubject}
+                    onChange={(e) => setDraftSubject(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label-field">Message</label>
+                  <textarea
+                    className="input-field h-40 py-3"
+                    value={draftBody}
+                    onChange={(e) => setDraftBody(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="btn-primary w-full"
+                  disabled={saving}
+                  onClick={() => save(t.key)}
+                >
+                  {saving ? "Saving…" : "Save wording"}
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
