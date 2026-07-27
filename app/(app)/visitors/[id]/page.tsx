@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAppData } from "@/lib/hooks/useAppData";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusTag, AgeTag, WelcomerTag } from "@/components/Tag";
-import { ChevronLeft, Check, Mail, Phone, Archive, History } from "lucide-react";
-import { format } from "date-fns";
+import { ChevronLeft, Check, Mail, Phone, Archive, History, CheckCircle2, AlertTriangle } from "lucide-react";
+import { format, differenceInCalendarDays } from "date-fns";
 import type {
   Visitor,
   BibleStudyStatus,
@@ -16,25 +16,28 @@ import type {
   AgeCategory,
   ChurchService,
   ActivityLogEntry,
+  ArchiveReasonCategory,
 } from "@/types/database";
 import {
   REASON_OPTIONS,
   AGE_CATEGORY_OPTIONS,
   SERVICE_OPTIONS,
   BIBLE_STUDY_STATUS_OPTIONS,
+  ARCHIVE_REASON_OPTIONS,
 } from "@/types/database";
 
 export default function VisitorDetailPage() {
   const params = useParams<{ id: string }>();
   const supabase = createClient();
-  const { profile, welcomers, bibleStudyGroups, profiles } = useAppData();
+  const { profile, welcomers, bibleStudyGroups, profiles, settings } = useAppData();
 
   const [visitor, setVisitor] = useState<Visitor | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showArchiveForm, setShowArchiveForm] = useState(false);
-  const [archiveReason, setArchiveReason] = useState("");
+  const [archiveCategory, setArchiveCategory] = useState<ArchiveReasonCategory>("Moved away");
+  const [archiveReasonText, setArchiveReasonText] = useState("");
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [actorNames, setActorNames] = useState<Record<string, string>>({});
 
@@ -119,13 +122,48 @@ export default function VisitorDetailPage() {
     setSaving(false);
   }
 
+  // Saving a note in an empty week box now also marks that week attended
+  // and stamps today's date — the note itself is evidence contact
+  // happened, and weeks don't always land exactly 7 days apart. Existing
+  // dates are never overwritten by this, only filled in the first time.
   async function updateWeekNotes(week: 1 | 2 | 3, notes: string) {
+    if (!visitor) return;
     const notesField = `week${week}_notes` as const;
     const authorField = `week${week}_notes_by` as const;
-    await updateField({
+    const dateField = `week${week}_date` as const;
+    const attendedField = `week${week}_attended` as const;
+
+    const updates: Partial<Visitor> = {
       [notesField]: notes || null,
       [authorField]: notes.trim() ? profile?.id ?? null : null,
+    };
+
+    if (notes.trim() && !visitor[dateField]) {
+      (updates as Record<string, unknown>)[dateField] = new Date().toISOString().slice(0, 10);
+      (updates as Record<string, unknown>)[attendedField] = true;
+    }
+
+    await updateField(updates);
+    loadActivityLog();
+  }
+
+  async function confirmSettled() {
+    await updateField({ status: "Settled", settled_prompt_seen: true });
+    await supabase.from("visitor_activity_log").insert({
+      visitor_id: visitor!.id,
+      actor_id: profile?.id ?? null,
+      action: "status_changed",
+      detail: "Confirmed Settled after completing 3 weeks",
     });
+    await loadActivityLog();
+  }
+
+  async function dismissSettledPrompt() {
+    await updateField({ settled_prompt_seen: true });
+  }
+
+  async function dismissArchivePrompt() {
+    await updateField({ archive_prompt_dismissed_at: new Date().toISOString() });
   }
 
   async function handleBibleStudyOutcome(
@@ -165,20 +203,23 @@ export default function VisitorDetailPage() {
   }
 
   async function handleArchive() {
-    if (!visitor || !archiveReason.trim()) {
-      setError("Please provide an archive reason.");
+    if (!visitor) return;
+    if (archiveCategory === "Other" && !archiveReasonText.trim()) {
+      setError("Please provide a reason.");
       return;
     }
+    const finalReason = archiveCategory === "Other" ? archiveReasonText.trim() : archiveCategory;
     await updateField({
       status: "Archived",
-      archive_reason: archiveReason.trim(),
+      archive_reason: finalReason,
+      archive_reason_category: archiveCategory,
       archived_at: new Date().toISOString(),
     });
     await supabase.from("visitor_activity_log").insert({
       visitor_id: visitor.id,
       actor_id: profile?.id ?? null,
       action: "archived",
-      detail: archiveReason.trim(),
+      detail: finalReason,
     });
     await loadActivityLog();
     setShowArchiveForm(false);
@@ -189,6 +230,7 @@ export default function VisitorDetailPage() {
     await updateField({
       status: "Settled",
       archive_reason: null,
+      archive_reason_category: null,
       archived_at: null,
     });
     await supabase.from("visitor_activity_log").insert({
@@ -217,6 +259,29 @@ export default function VisitorDetailPage() {
   }
 
   const assignedWelcomer = welcomers.find((w) => w.id === visitor.welcomer_id);
+
+  const showSettledPrompt =
+    visitor.status === "Active" &&
+    visitor.week1_attended &&
+    visitor.week2_attended &&
+    visitor.week3_attended &&
+    !visitor.settled_prompt_seen;
+
+  const nudgeWeeks = parseInt(settings.welcomer_nudge_weeks ?? "4", 10) || 4;
+  const mostRecentDate = [visitor.week3_date, visitor.week2_date, visitor.week1_date, visitor.date_first_attended]
+    .filter(Boolean)
+    .sort()
+    .pop();
+  const daysSinceLastAttendance = mostRecentDate
+    ? differenceInCalendarDays(new Date(), new Date(mostRecentDate))
+    : 0;
+  const dismissedRecently =
+    visitor.archive_prompt_dismissed_at &&
+    differenceInCalendarDays(new Date(), new Date(visitor.archive_prompt_dismissed_at)) < 7;
+  const showArchivePrompt =
+    (visitor.status === "Active" || visitor.status === "Settled") &&
+    daysSinceLastAttendance >= nudgeWeeks * 7 &&
+    !dismissedRecently;
 
   return (
     <div className="pb-24">
@@ -253,11 +318,54 @@ export default function VisitorDetailPage() {
           <p className="text-body text-error bg-error/10 rounded-input px-3 py-2">{error}</p>
         )}
 
+        {showSettledPrompt && (
+          <div className="card p-4 border-success/40 bg-success/5">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
+              <h4>Completed 3 weeks</h4>
+            </div>
+            <p className="text-body text-textSecondary mb-3">
+              {visitor.name} has attended all 3 weeks. Mark them as Settled?
+            </p>
+            <div className="flex gap-3">
+              <button className="btn-secondary flex-1" onClick={dismissSettledPrompt} disabled={saving}>
+                Not yet
+              </button>
+              <button className="btn-primary flex-1" onClick={confirmSettled} disabled={saving}>
+                Mark as Settled
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showArchivePrompt && !showArchiveForm && (
+          <div className="card p-4 border-accent/40 bg-accent/5">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-5 h-5 text-accent shrink-0" />
+              <h4>Hasn't attended in a while</h4>
+            </div>
+            <p className="text-body text-textSecondary mb-3">
+              It's been {nudgeWeeks}+ weeks since {visitor.name} last attended. Should they be archived?
+            </p>
+            <div className="flex gap-3">
+              <button className="btn-secondary flex-1" onClick={dismissArchivePrompt} disabled={saving}>
+                Not yet
+              </button>
+              <button
+                className="btn-accent flex-1"
+                onClick={() => setShowArchiveForm(true)}
+                disabled={saving}
+              >
+                Archive
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Contact info */}
         {(visitor.email || visitor.phone_number) && (
           <div className="card p-4 flex flex-col gap-2">
             {visitor.email && (
-              
               <a href={`mailto:${visitor.email}`} className="flex items-center gap-2 text-body text-primary">
                 <Mail className="w-4 h-4" /> {visitor.email}
               </a>
@@ -266,7 +374,7 @@ export default function VisitorDetailPage() {
               <a href={`tel:${visitor.phone_number}`} className="flex items-center gap-2 text-body text-primary">
                 <Phone className="w-4 h-4" /> {visitor.phone_number}
               </a>
-            )}  
+            )}
           </div>
         )}
 
@@ -562,6 +670,11 @@ export default function VisitorDetailPage() {
               {visitor.archived_at &&
                 format(new Date(visitor.archived_at), "d MMM yyyy")}
             </p>
+            {visitor.archive_reason_category && (
+              <p className="text-body text-textPrimary font-medium mb-1">
+                {visitor.archive_reason_category}
+              </p>
+            )}
             <p className="text-body text-textPrimary mb-4">{visitor.archive_reason}</p>
             <button className="btn-secondary w-full" onClick={handleUnarchive}>
               Restore to Settled
@@ -570,16 +683,29 @@ export default function VisitorDetailPage() {
         ) : showArchiveForm ? (
           <div className="card p-4">
             <h4 className="mb-3">Archive this visitor</h4>
-            <label className="label-field" htmlFor="archiveReason">
-              Reason (required)
+            <label className="label-field" htmlFor="archiveCategory">
+              Reason
             </label>
-            <textarea
-              id="archiveReason"
-              className="input-field h-24 py-3 mb-3"
-              value={archiveReason}
-              onChange={(e) => setArchiveReason(e.target.value)}
-              placeholder="e.g. Moved away, joined another church, unresponsive after 3 catch-up attempts…"
-            />
+            <select
+              id="archiveCategory"
+              className="input-field mb-3"
+              value={archiveCategory}
+              onChange={(e) => setArchiveCategory(e.target.value as ArchiveReasonCategory)}
+            >
+              {ARCHIVE_REASON_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            {archiveCategory === "Other" && (
+              <textarea
+                className="input-field h-24 py-3 mb-3"
+                value={archiveReasonText}
+                onChange={(e) => setArchiveReasonText(e.target.value)}
+                placeholder="Please specify…"
+              />
+            )}
             <div className="flex gap-3">
               <button
                 className="btn-secondary flex-1"
@@ -640,6 +766,7 @@ function formatActivityAction(action: string): string {
     marked_week_2: "Week 2 updated",
     marked_week_3: "Week 3 updated",
     bible_study_outcome_set: "Bible study status changed",
+    status_changed: "Status changed",
   };
   return labels[action] ?? action.replace(/_/g, " ");
 }

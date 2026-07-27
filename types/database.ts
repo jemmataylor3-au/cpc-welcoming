@@ -22,6 +22,13 @@ export type BibleStudyStatus =
 
 export type VisitorStatus = "Active" | "Settled" | "Archived";
 
+export type ArchiveReasonCategory =
+  | "Moved away"
+  | "Joined another local church"
+  | "No longer responsive"
+  | "Committed to another church"
+  | "Other";
+
 export interface Profile {
   id: string;
   full_name: string;
@@ -95,10 +102,12 @@ export interface Visitor {
 
   three_week_prompt_sent_at: string | null;
   welcomer_nudge_sent_at: string | null;
+  archive_prompt_dismissed_at: string | null;
   settled_prompt_seen: boolean;
 
   status: VisitorStatus;
   archive_reason: string | null;
+  archive_reason_category: ArchiveReasonCategory | null;
   archived_at: string | null;
 
   created_at: string;
@@ -158,4 +167,12 @@ export const BIBLE_STUDY_STATUS_OPTIONS: BibleStudyStatus[] = [
   "Joined Bible Study",
   "Not Involved",
   "Not Yet (remind in 6 weeks)",
+];
+
+export const ARCHIVE_REASON_OPTIONS: ArchiveReasonCategory[] = [
+  "Moved away",
+  "Joined another local church",
+  "No longer responsive",
+  "Committed to another church",
+  "Other",
 ];
