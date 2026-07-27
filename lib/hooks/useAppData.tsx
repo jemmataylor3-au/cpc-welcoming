@@ -14,6 +14,7 @@ interface AppDataContextValue {
   profile: Profile | null;
   welcomers: Welcomer[];
   bibleStudyGroups: BibleStudyGroup[];
+  profiles: Profile[];
   settings: Record<string, string>;
   loading: boolean;
   refresh: () => Promise<void>;
@@ -26,6 +27,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [welcomers, setWelcomers] = useState<Welcomer[]>([]);
   const [bibleStudyGroups, setBibleStudyGroups] = useState<BibleStudyGroup[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +43,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const [profileRes, welcomersRes, groupsRes, settingsRes] = await Promise.all([
+    const [profileRes, welcomersRes, groupsRes, settingsRes, profilesRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).single(),
       supabase.from("welcomers").select("*").eq("active", true).order("name"),
       supabase
@@ -50,11 +52,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         .eq("active", true)
         .order("name"),
       supabase.from("app_settings").select("*"),
+      supabase.from("profiles").select("*").order("full_name"),
     ]);
 
     setProfile((profileRes.data as Profile) ?? null);
     setWelcomers((welcomersRes.data as Welcomer[]) ?? []);
     setBibleStudyGroups((groupsRes.data as BibleStudyGroup[]) ?? []);
+    setProfiles((profilesRes.data as Profile[]) ?? []);
 
     const settingsMap: Record<string, string> = {};
     ((settingsRes.data as AppSetting[]) ?? []).forEach((s) => {
@@ -77,7 +81,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppDataContext.Provider
-      value={{ profile, welcomers, bibleStudyGroups, settings, loading, refresh }}
+      value={{ profile, welcomers, bibleStudyGroups, profiles, settings, loading, refresh }}
     >
       {children}
     </AppDataContext.Provider>

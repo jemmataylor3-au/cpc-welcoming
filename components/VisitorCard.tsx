@@ -4,14 +4,27 @@ import Link from "next/link";
 import { AgeTag, WelcomerTag } from "@/components/Tag";
 import { format } from "date-fns";
 import { Check, Circle } from "lucide-react";
-import type { Visitor, Welcomer } from "@/types/database";
+import type { Visitor, Welcomer, Profile } from "@/types/database";
 
 interface VisitorCardProps {
   visitor: Visitor;
   welcomer?: Welcomer | null;
+  profileById?: Record<string, Profile>;
 }
 
-export function VisitorCard({ visitor, welcomer }: VisitorCardProps) {
+const WEEK_BOX_STYLES = [
+  { bg: "bg-secondary/60", label: "Week 1 comment" },
+  { bg: "bg-sage/25", label: "Week 2 comment" },
+  { bg: "bg-accent/15", label: "Week 3 comment" },
+];
+
+export function VisitorCard({ visitor, welcomer, profileById = {} }: VisitorCardProps) {
+  const weekNotes = [
+    { notes: visitor.week1_notes, authorId: visitor.week1_notes_by },
+    { notes: visitor.week2_notes, authorId: visitor.week2_notes_by },
+    { notes: visitor.week3_notes, authorId: visitor.week3_notes_by },
+  ];
+
   return (
     <Link href={`/visitors/${visitor.id}`} className="card p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
@@ -26,6 +39,27 @@ export function VisitorCard({ visitor, welcomer }: VisitorCardProps) {
           <span className="tag bg-secondary text-primary">{visitor.service}</span>
         </div>
       </div>
+
+      {weekNotes.some((w) => w.notes) && (
+        <div className="flex flex-col gap-2">
+          {weekNotes.map((w, i) =>
+            w.notes ? (
+              <div key={i} className={`rounded-input px-3 py-2 ${WEEK_BOX_STYLES[i].bg}`}>
+                <p className="text-caption font-semibold text-textPrimary mb-0.5">
+                  {WEEK_BOX_STYLES[i].label}
+                  {w.authorId && profileById[w.authorId] && (
+                    <span className="font-normal text-textSecondary">
+                      {" "}
+                      — {profileById[w.authorId].full_name}
+                    </span>
+                  )}
+                </p>
+                <p className="text-body text-textPrimary">{w.notes}</p>
+              </div>
+            ) : null
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <WeekDot label="Wk 1" attended={visitor.week1_attended} />

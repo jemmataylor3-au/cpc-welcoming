@@ -10,10 +10,11 @@ import { useAppData } from "@/lib/hooks/useAppData";
 
 export default function SettledVisitorsPage() {
   const { visitors, loading, error, sortOrder, setSortOrder } = useVisitors("Settled");
-  const { welcomers } = useAppData();
+  const { welcomers, profiles } = useAppData();
   const [search, setSearch] = useState("");
 
   const welcomerById = Object.fromEntries(welcomers.map((w) => [w.id, w]));
+  const profileById = Object.fromEntries(profiles.map((p) => [p.id, p]));
 
   const filtered = useMemo(() => {
     if (!search.trim()) return visitors;
@@ -53,6 +54,7 @@ export default function SettledVisitorsPage() {
               key={v.id}
               visitor={v}
               welcomer={v.welcomer_id ? welcomerById[v.welcomer_id] : null}
+              profileById={profileById}
             />
           ))}
         </div>
