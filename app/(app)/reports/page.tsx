@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { ServiceFilter } from "@/components/ServiceFilter";
-import { ChevronLeft } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -130,14 +128,6 @@ export default function ReportsPage() {
       <PageHeader
         title="Reports"
         subtitle={`Last ${MONTHS_BACK} months`}
-        action={
-          <Link
-            href="/more"
-            className="w-11 h-11 rounded-button bg-white/10 flex items-center justify-center shrink-0"
-          >
-            <ChevronLeft className="w-5 h-5 text-secondary" />
-          </Link>
-        }
       />
 
       <div className="max-w-2xl mx-auto px-5 -mt-3 space-y-6">

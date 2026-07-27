@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAppData } from "@/lib/hooks/useAppData";
 import { PageHeader } from "@/components/PageHeader";
-import { Settings, LogOut, User, Bell, BellOff, BarChart3, UserPlus } from "lucide-react";
+import { Settings, LogOut, User, Bell, BellOff, UserPlus } from "lucide-react";
 import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 
 export default function MorePage() {
@@ -96,11 +96,6 @@ export default function MorePage() {
         <Link href="/visitors/pending" className="card p-4 flex items-center gap-3">
           <UserPlus className="w-5 h-5 text-primary" />
           <span className="text-body text-textPrimary">New submissions</span>
-        </Link>
-
-        <Link href="/reports" className="card p-4 flex items-center gap-3">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          <span className="text-body text-textPrimary">Reports</span>
         </Link>
 
         {profile?.role === "admin" && (

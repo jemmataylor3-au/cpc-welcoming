@@ -350,17 +350,36 @@ export default function VisitorDetailPage() {
               <h4>Hasn't attended in a while</h4>
             </div>
             <p className="text-body text-textSecondary mb-3">
-              It's been {nudgeWeeks}+ weeks since {visitor.name} last attended. Should they be archived?
+              It's been {nudgeWeeks}+ weeks since {visitor.name} last attended. Archive them?
             </p>
+            <label className="label-field" htmlFor="promptArchiveCategory">
+              Reason
+            </label>
+            <select
+              id="promptArchiveCategory"
+              className="input-field mb-3"
+              value={archiveCategory}
+              onChange={(e) => setArchiveCategory(e.target.value as ArchiveReasonCategory)}
+            >
+              {ARCHIVE_REASON_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            {archiveCategory === "Other" && (
+              <textarea
+                className="input-field h-20 py-2.5 mb-3"
+                value={archiveReasonText}
+                onChange={(e) => setArchiveReasonText(e.target.value)}
+                placeholder="Please specify…"
+              />
+            )}
             <div className="flex gap-3">
               <button className="btn-secondary flex-1" onClick={dismissArchivePrompt} disabled={saving}>
                 Not yet
               </button>
-              <button
-                className="btn-accent flex-1"
-                onClick={() => setShowArchiveForm(true)}
-                disabled={saving}
-              >
+              <button className="btn-accent flex-1" onClick={handleArchive} disabled={saving}>
                 Archive
               </button>
             </div>
@@ -766,6 +785,8 @@ function formatActivityAction(action: string): string {
     marked_week_3: "Week 3 updated",
     bible_study_outcome_set: "Bible study status changed",
     status_changed: "Status changed",
+    bulk_comment: "Note added (bulk)",
+    welcomer_reassigned: "Welcomer reassigned (bulk)",
   };
   return labels[action] ?? action.replace(/_/g, " ");
 }

@@ -86,6 +86,11 @@ export default function NewVisitorPage() {
 
     setSubmitting(true);
     try {
+      // "Just visiting" people go straight to Archived — there's no
+      // follow-up journey to track for someone passing through, so they
+      // never enter the Active pipeline at all.
+      const isJustVisiting = reason === "Just visiting";
+
       const { data, error: insertError } = await supabase
         .from("visitors")
         .insert({
@@ -103,6 +108,10 @@ export default function NewVisitorPage() {
           week1_attended: true,
           week1_date: dateFirstAttended,
           week1_notes: notes.trim() || null,
+          status: isJustVisiting ? "Archived" : "Active",
+          archive_reason_category: isJustVisiting ? "Other" : null,
+          archive_reason: isJustVisiting ? "Just visiting" : null,
+          archived_at: isJustVisiting ? new Date().toISOString() : null,
         })
         .select()
         .single();
@@ -254,6 +263,12 @@ export default function NewVisitorPage() {
                 </option>
               ))}
             </select>
+            {reason === "Just visiting" && (
+              <p className="text-small text-textSecondary mt-1.5">
+                They'll be saved straight to Archived rather than tracked
+                through the 3-week follow-up.
+              </p>
+            )}
           </div>
 
           <div>

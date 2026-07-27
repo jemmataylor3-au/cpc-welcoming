@@ -9,6 +9,7 @@ export type ReasonForAttendance =
   | "Looking for a new church"
   | "New to faith"
   | "New to faith + Looking for a new church"
+  | "Just visiting"
   | "Other";
 
 export type AgeCategory = "Youth" | "Young Adults (YA)" | "Over 30";
@@ -151,6 +152,7 @@ export const REASON_OPTIONS: ReasonForAttendance[] = [
   "Looking for a new church",
   "New to faith",
   "New to faith + Looking for a new church",
+  "Just visiting",
   "Other",
 ];
 

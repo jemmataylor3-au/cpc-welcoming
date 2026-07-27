@@ -10,6 +10,9 @@ interface VisitorCardProps {
   visitor: Visitor;
   welcomer?: Welcomer | null;
   profileById?: Record<string, Profile>;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 // Distinct, brand-safe background tints for each week's comment box —
@@ -20,21 +23,39 @@ const WEEK_BOX_STYLES = [
   { bg: "bg-accent/15", label: "Week 3 comment" }, // Muted Terracotta
 ];
 
-export function VisitorCard({ visitor, welcomer, profileById = {} }: VisitorCardProps) {
+export function VisitorCard({
+  visitor,
+  welcomer,
+  profileById = {},
+  selectionMode = false,
+  selected = false,
+  onToggleSelect,
+}: VisitorCardProps) {
   const weekNotes = [
     { notes: visitor.week1_notes, authorId: visitor.week1_notes_by },
     { notes: visitor.week2_notes, authorId: visitor.week2_notes_by },
     { notes: visitor.week3_notes, authorId: visitor.week3_notes_by },
   ];
 
-  return (
-    <Link href={`/visitors/${visitor.id}`} className="card p-4 flex flex-col gap-3">
+  const inner = (
+    <>
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="flex items-start gap-3">
+          {selectionMode && (
+            <span
+              className={`w-6 h-6 rounded-sm border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                selected ? "bg-primary border-primary" : "bg-surface border-textSecondary"
+              }`}
+            >
+              {selected && <Check className="w-4 h-4 text-white" strokeWidth={3} />}
+            </span>
+          )}
+          <div>
           <h4 className="text-textPrimary">{visitor.name}</h4>
           <p className="text-small text-textSecondary mt-0.5">
             First attended {format(new Date(visitor.date_first_attended), "d MMM yyyy")}
           </p>
+          </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <AgeTag category={visitor.age_category} />
@@ -77,6 +98,26 @@ export function VisitorCard({ visitor, welcomer, profileById = {} }: VisitorCard
           <WelcomerTag name={welcomer.name} colorHex={welcomer.color_hex} />
         </div>
       )}
+    </>
+  );
+
+  if (selectionMode) {
+    return (
+      <button
+        type="button"
+        onClick={() => onToggleSelect?.(visitor.id)}
+        className={`card p-4 flex flex-col gap-3 w-full text-left ${
+          selected ? "border-primary" : ""
+        }`}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={`/visitors/${visitor.id}`} className="card p-4 flex flex-col gap-3">
+      {inner}
     </Link>
   );
 }
