@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAppData } from "@/lib/hooks/useAppData";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusTag, AgeTag, WelcomerTag } from "@/components/Tag";
+import { WelcomerSelect } from "@/components/WelcomerSelect";
 import { ChevronLeft, Check, Mail, Phone, Archive, History, CheckCircle2, AlertTriangle } from "lucide-react";
 import { format, differenceInCalendarDays } from "date-fns";
 import type {
@@ -148,7 +149,11 @@ export default function VisitorDetailPage() {
   }
 
   async function confirmSettled() {
-    await updateField({ status: "Settled", settled_prompt_seen: true });
+    await updateField({
+      status: "Settled",
+      settled_prompt_seen: true,
+      settled_at: new Date().toISOString(),
+    });
     await supabase.from("visitor_activity_log").insert({
       visitor_id: visitor!.id,
       actor_id: profile?.id ?? null,
@@ -629,23 +634,17 @@ export default function VisitorDetailPage() {
               </select>
             </div>
             <div>
-              <label className="label-field" htmlFor="welcomerEdit">
-                Assigned welcomer
-              </label>
-              <select
-                id="welcomerEdit"
-                className="input-field"
-                value={visitor.welcomer_id ?? ""}
+              <label className="label-field">Assigned welcomer</label>
+              <WelcomerSelect
+                welcomers={welcomers}
+                service={visitor.service}
+                welcomerId={visitor.welcomer_id}
+                welcomerOther={visitor.welcomer_other}
                 disabled={saving}
-                onChange={(e) => updateField({ welcomer_id: e.target.value || null })}
-              >
-                <option value="">Unassigned</option>
-                {welcomers.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(welcomerId, welcomerOther) =>
+                  updateField({ welcomer_id: welcomerId, welcomer_other: welcomerOther })
+                }
+              />
             </div>
             <div>
               <label className="label-field" htmlFor="extraNotes">
@@ -798,12 +797,12 @@ function WeekRow({
             type="button"
             disabled={disabled}
             onClick={() => onToggle(!attended)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-              attended ? "bg-success" : "bg-border"
+            className={`w-9 h-9 rounded-sm border-2 flex items-center justify-center shrink-0 transition-colors ${
+              attended ? "bg-success border-success" : "bg-surface border-textSecondary"
             }`}
             aria-label={`Mark week ${weekNum} ${attended ? "not attended" : "attended"}`}
           >
-            {attended && <Check className="w-4 h-4 text-white" strokeWidth={3} />}
+            {attended && <Check className="w-6 h-6 text-white" strokeWidth={3} />}
           </button>
           <span className="text-h4">Week {weekNum}</span>
         </label>

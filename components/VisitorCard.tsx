@@ -12,10 +12,12 @@ interface VisitorCardProps {
   profileById?: Record<string, Profile>;
 }
 
+// Distinct, brand-safe background tints for each week's comment box —
+// kept within the CPC palette rather than arbitrary colours.
 const WEEK_BOX_STYLES = [
-  { bg: "bg-secondary/60", label: "Week 1 comment" },
-  { bg: "bg-sage/25", label: "Week 2 comment" },
-  { bg: "bg-accent/15", label: "Week 3 comment" },
+  { bg: "bg-secondary/60", label: "Week 1 comment" }, // Warm Sand
+  { bg: "bg-sage/25", label: "Week 2 comment" }, // Soft Sage
+  { bg: "bg-accent/15", label: "Week 3 comment" }, // Muted Terracotta
 ];
 
 export function VisitorCard({ visitor, welcomer, profileById = {} }: VisitorCardProps) {

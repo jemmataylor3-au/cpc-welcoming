@@ -15,6 +15,7 @@ import {
   type Visitor,
 } from "@/types/database";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { WelcomerSelect } from "@/components/WelcomerSelect";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -33,6 +34,7 @@ export default function NewVisitorPage() {
   const [ageCategory, setAgeCategory] = useState<AgeCategory>("Over 30");
   const [service, setService] = useState<ChurchService>("Charlestown AM");
   const [welcomerId, setWelcomerId] = useState<string>("");
+  const [welcomerOther, setWelcomerOther] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [isReturning, setIsReturning] = useState(false);
 
@@ -96,6 +98,7 @@ export default function NewVisitorPage() {
           service,
           is_returning: isReturning,
           welcomer_id: welcomerId || null,
+          welcomer_other: welcomerOther,
           entered_by: profile?.id ?? null,
           week1_attended: true,
           week1_date: dateFirstAttended,
@@ -290,23 +293,18 @@ export default function NewVisitorPage() {
           </div>
 
           <div>
-            <label className="label-field" htmlFor="welcomer">
-              Assigned welcomer
-            </label>
-            <select
-              id="welcomer"
-              className="input-field"
-              value={welcomerId}
-              onChange={(e) => setWelcomerId(e.target.value)}
+            <label className="label-field">Assigned welcomer</label>
+            <WelcomerSelect
+              welcomers={welcomers}
+              service={service}
+              welcomerId={welcomerId || null}
+              welcomerOther={welcomerOther}
               disabled={appDataLoading}
-            >
-              <option value="">Unassigned</option>
-              {welcomers.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
+              onChange={(id, other) => {
+                setWelcomerId(id ?? "");
+                setWelcomerOther(other);
+              }}
+            />
             {welcomers.length === 0 && !appDataLoading && (
               <p className="text-small text-textSecondary mt-1.5">
                 No welcomers set up yet — add some in Admin → Welcomers.

@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { VisitorCard } from "@/components/VisitorCard";
 import { SearchBar } from "@/components/SearchBar";
 import { SortToggle } from "@/components/SortToggle";
+import { ServiceFilter } from "@/components/ServiceFilter";
+import type { ChurchService } from "@/types/database";
 import { useVisitors } from "@/lib/hooks/useVisitors";
 import { useAppData } from "@/lib/hooks/useAppData";
 
@@ -12,15 +14,22 @@ export default function SettledVisitorsPage() {
   const { visitors, loading, error, sortOrder, setSortOrder } = useVisitors("Settled");
   const { welcomers, profiles } = useAppData();
   const [search, setSearch] = useState("");
+  const [serviceFilter, setServiceFilter] = useState<ChurchService | "All">("All");
 
   const welcomerById = Object.fromEntries(welcomers.map((w) => [w.id, w]));
   const profileById = Object.fromEntries(profiles.map((p) => [p.id, p]));
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return visitors;
-    const q = search.trim().toLowerCase();
-    return visitors.filter((v) => v.name.toLowerCase().includes(q));
-  }, [visitors, search]);
+    let result = visitors;
+    if (serviceFilter !== "All") {
+      result = result.filter((v) => v.service === serviceFilter);
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter((v) => v.name.toLowerCase().includes(q));
+    }
+    return result;
+  }, [visitors, search, serviceFilter]);
 
   return (
     <div className="pb-24">
@@ -30,11 +39,14 @@ export default function SettledVisitorsPage() {
       />
 
       <div className="max-w-2xl mx-auto px-5 -mt-3">
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-3">
           <div className="flex-1">
             <SearchBar value={search} onChange={setSearch} />
           </div>
           <SortToggle sortOrder={sortOrder} onChange={setSortOrder} />
+        </div>
+        <div className="mb-4">
+          <ServiceFilter value={serviceFilter} onChange={setServiceFilter} />
         </div>
 
         <div className="space-y-3">

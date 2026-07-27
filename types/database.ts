@@ -44,6 +44,7 @@ export interface Welcomer {
   name: string;
   color_hex: string;
   active: boolean;
+  services: ChurchService[];
   created_at: string;
 }
 
@@ -75,6 +76,7 @@ export interface Visitor {
   is_returning: boolean;
 
   welcomer_id: string | null;
+  welcomer_other: string | null;
   entered_by: string | null;
 
   week1_attended: boolean;
@@ -106,6 +108,7 @@ export interface Visitor {
   settled_prompt_seen: boolean;
 
   status: VisitorStatus;
+  settled_at: string | null;
   archive_reason: string | null;
   archive_reason_category: ArchiveReasonCategory | null;
   archived_at: string | null;

@@ -24,6 +24,8 @@ export function useVisitors(status: VisitorStatus) {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Sort preference is shared across Active/Settled/Archived and persists
+  // in the browser (per-device, not per-account) via localStorage.
   const [sortOrder, setSortOrderState] = useState<SortOrder>("newest");
 
   useEffect(() => {

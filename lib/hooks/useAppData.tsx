@@ -52,6 +52,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         .eq("active", true)
         .order("name"),
       supabase.from("app_settings").select("*"),
+      // Full profile list — used to show "who wrote this note" attribution,
+      // which can be any team member, not just the assigned welcomer.
       supabase.from("profiles").select("*").order("full_name"),
     ]);
 
