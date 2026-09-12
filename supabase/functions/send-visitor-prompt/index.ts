@@ -84,12 +84,16 @@ Deno.serve(async (req) => {
       .eq("id", body.visitorId)
       .single();
 
-    if (visitorError || !visitor) {
-      return new Response(JSON.stringify({ error: "Visitor not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+   if (visitorError || !visitor) {
+     console.error("send-visitor-prompt visitor lookup failed:", visitorError);
+     return new Response(
+       JSON.stringify({ error: "Visitor not found", detail: visitorError?.message ?? null }),
+       {
+         status: 404,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+       }
+     );
+   }
 
     const churchName = await getSetting(
       service,
