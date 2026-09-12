@@ -19,30 +19,112 @@ import { WelcomerSelect } from "@/components/WelcomerSelect";
 import Link from "next/link";
 import { format } from "date-fns";
 
+// If iOS backgrounds the tab for a while and reloads it when you come
+// back, everything typed so far would otherwise vanish (and the browser's
+// own autofill can jump in to "helpfully" fill blank fields). Persisting
+// a draft to sessionStorage and restoring it on mount avoids both.
+const DRAFT_KEY = "cpc_new_visitor_draft";
+
+interface VisitorDraft {
+  name: string;
+  email: string;
+  phone: string;
+  dateFirstAttended: string;
+  reason: ReasonForAttendance;
+  ageCategory: AgeCategory;
+  service: ChurchService;
+  welcomerId: string;
+  welcomerOther: string | null;
+  notes: string;
+  isReturning: boolean;
+}
+
+function loadDraft(): Partial<VisitorDraft> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.sessionStorage.getItem(DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as Partial<VisitorDraft>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function clearDraft() {
+  try {
+    window.sessionStorage.removeItem(DRAFT_KEY);
+  } catch {
+    // Ignore — worst case the next visit starts from a stale draft.
+  }
+}
+
 export default function NewVisitorPage() {
   const router = useRouter();
   const supabase = createClient();
   const { profile, welcomers, loading: appDataLoading } = useAppData();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(() => loadDraft().name ?? "");
+  const [email, setEmail] = useState(() => loadDraft().email ?? "");
+  const [phone, setPhone] = useState(() => loadDraft().phone ?? "");
   const [dateFirstAttended, setDateFirstAttended] = useState(
-    new Date().toISOString().slice(0, 10)
+    () => loadDraft().dateFirstAttended ?? new Date().toISOString().slice(0, 10)
   );
-  const [reason, setReason] = useState<ReasonForAttendance>(REASON_OPTIONS[0]);
-  const [ageCategory, setAgeCategory] = useState<AgeCategory>("Over 30");
-  const [service, setService] = useState<ChurchService>("Charlestown AM");
-  const [welcomerId, setWelcomerId] = useState<string>("");
-  const [welcomerOther, setWelcomerOther] = useState<string | null>(null);
-  const [notes, setNotes] = useState("");
-  const [isReturning, setIsReturning] = useState(false);
+  const [reason, setReason] = useState<ReasonForAttendance>(
+    () => loadDraft().reason ?? REASON_OPTIONS[0]
+  );
+  const [ageCategory, setAgeCategory] = useState<AgeCategory>(
+    () => loadDraft().ageCategory ?? "Over 30"
+  );
+  const [service, setService] = useState<ChurchService>(
+    () => loadDraft().service ?? "Charlestown AM"
+  );
+  const [welcomerId, setWelcomerId] = useState<string>(() => loadDraft().welcomerId ?? "");
+  const [welcomerOther, setWelcomerOther] = useState<string | null>(
+    () => loadDraft().welcomerOther ?? null
+  );
+  const [notes, setNotes] = useState(() => loadDraft().notes ?? "");
+  const [isReturning, setIsReturning] = useState(() => loadDraft().isReturning ?? false);
 
   const [possibleDuplicates, setPossibleDuplicates] = useState<Visitor[]>([]);
   const [checkingDuplicates, setCheckingDuplicates] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Save the draft on every change so a background/reload can't lose it.
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          name,
+          email,
+          phone,
+          dateFirstAttended,
+          reason,
+          ageCategory,
+          service,
+          welcomerId,
+          welcomerOther,
+          notes,
+          isReturning,
+        })
+      );
+    } catch {
+      // Storage full or unavailable — not worth failing the form over.
+    }
+  }, [
+    name,
+    email,
+    phone,
+    dateFirstAttended,
+    reason,
+    ageCategory,
+    service,
+    welcomerId,
+    welcomerOther,
+    notes,
+    isReturning,
+  ]);
 
   // Debounced duplicate-name check: fires ~500ms after the person stops
   // typing, using a case-insensitive partial match so "Jon" also catches
@@ -125,6 +207,7 @@ export default function NewVisitorPage() {
         detail: `Added by ${profile?.full_name ?? "unknown"}`,
       });
 
+      clearDraft();
       router.push(`/visitors/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save visitor.");
@@ -158,6 +241,7 @@ export default function NewVisitorPage() {
               className="input-field"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoComplete="off"
               required
             />
           </div>
@@ -217,6 +301,7 @@ export default function NewVisitorPage() {
                 className="input-field"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
               />
             </div>
             <div>
@@ -229,6 +314,7 @@ export default function NewVisitorPage() {
                 className="input-field"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                autoComplete="off"
               />
             </div>
           </div>
@@ -240,7 +326,7 @@ export default function NewVisitorPage() {
             <input
               id="dateFirst"
               type="date"
-              className="input-field"
+              className="input-field w-full max-w-full min-w-0 box-border [-webkit-appearance:none] [appearance:none]"
               value={dateFirstAttended}
               onChange={(e) => setDateFirstAttended(e.target.value)}
               required

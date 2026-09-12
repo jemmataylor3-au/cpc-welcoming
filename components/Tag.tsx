@@ -8,13 +8,13 @@ const STATUS_STYLES: Record<VisitorStatus, string> = {
 };
 
 const AGE_STYLES: Record<AgeCategory, string> = {
-  Youth: "bg-green/20 text-navy",
-  "Young Adult": "bg-teal/25 text-navy",
+  Youth: "bg-green/35 text-navy",
+  "Young Adult": "bg-teal/35 text-navy",
   "Young Family": "bg-sand text-navy",
   "Established Family": "bg-clay/60 text-navy",
-  "Midlife / Empty Nester": "bg-orchid/30 text-navy",
-  Senior: "bg-mauve/30 text-navy",
-  "Over 30": "bg-moss/20 text-navy",
+  "Midlife / Empty Nester": "bg-orchid/35 text-navy",
+  Senior: "bg-mauve/40 text-navy",
+  "Over 30": "bg-moss/35 text-navy",
 };
 
 export function StatusTag({ status }: { status: VisitorStatus }) {
