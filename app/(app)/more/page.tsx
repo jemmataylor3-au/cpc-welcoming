@@ -11,7 +11,7 @@ import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 export default function MorePage() {
   const router = useRouter();
   const supabase = createClient();
-  const { profile } = useAppData();
+  const { profile, pendingApprovalCount } = useAppData();
   const push = usePushNotifications();
 
   async function handleSignOut() {
@@ -98,10 +98,20 @@ export default function MorePage() {
           <span className="text-body text-textPrimary">New submissions</span>
         </Link>
 
+        <Link href="/help" className="card p-4 flex items-center gap-3">
+          <HelpCircle className="w-5 h-5 text-primary" />
+          <span className="text-body text-textPrimary">How to use this app</span>
+        </Link>
+
         {profile?.role === "admin" && (
           <Link href="/admin" className="card p-4 flex items-center gap-3">
             <Settings className="w-5 h-5 text-primary" />
-            <span className="text-body text-textPrimary">Admin & Settings</span>
+            <span className="text-body text-textPrimary flex-1">Admin & Settings</span>
+            {pendingApprovalCount > 0 && (
+              <span className="tag bg-wine text-white shrink-0">
+                {pendingApprovalCount} awaiting approval
+              </span>
+            )}
           </Link>
         )}
 
