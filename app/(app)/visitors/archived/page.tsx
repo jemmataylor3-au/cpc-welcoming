@@ -177,7 +177,7 @@ export default function ArchivedVisitorsPage() {
                 <span
                   className="tag mt-2 inline-block"
                   style={{
-                    backgroundColor: `${REASON_COLORS[v.archive_reason_category] ?? "#53796E"}26`,
+                    backgroundColor: `${REASON_COLORS[v.archive_reason_category] ?? "#53796E"}4D`,
                     color: REASON_COLORS[v.archive_reason_category] ?? "#53796E",
                   }}
                 >

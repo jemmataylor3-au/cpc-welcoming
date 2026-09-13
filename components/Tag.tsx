@@ -29,7 +29,7 @@ export function WelcomerTag({ name, colorHex }: { name: string; colorHex: string
   return (
     <span
       className="tag"
-      style={{ backgroundColor: `${colorHex}26`, color: colorHex }}
+      style={{ backgroundColor: `${colorHex}4D`, color: colorHex }}
     >
       {name}
     </span>

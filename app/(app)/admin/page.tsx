@@ -73,7 +73,7 @@ export default function AdminPage() {
         }
       />
 
-      <div className="max-w-2xl mx-auto px-5 -mt-1 space-y-6">
+      <div className="max-w-2xl mx-auto px-5 mt-2 space-y-6">
         <UsersSection supabase={supabase} welcomers={welcomers} />
         <WelcomersSection welcomers={welcomers} supabase={supabase} refresh={refresh} />
         <EmailTemplatesSection supabase={supabase} />
