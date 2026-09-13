@@ -25,11 +25,23 @@ export function AgeTag({ category }: { category: AgeCategory }) {
   return <span className={clsx("tag", AGE_STYLES[category])}>{category}</span>;
 }
 
+// Picks white or dark text depending on how light/dark the background
+// colour is, so a welcomer's tag stays readable no matter which colour
+// they're assigned — including the darker ones like navy or ink.
+function readableTextColor(hex: string): string {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 150 ? "#0E1F27" : "#FFFFFF";
+}
+
 export function WelcomerTag({ name, colorHex }: { name: string; colorHex: string }) {
   return (
     <span
       className="tag"
-      style={{ backgroundColor: `${colorHex}4D`, color: colorHex }}
+      style={{ backgroundColor: colorHex, color: readableTextColor(colorHex) }}
     >
       {name}
     </span>
