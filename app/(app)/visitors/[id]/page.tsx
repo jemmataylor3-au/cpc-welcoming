@@ -354,7 +354,7 @@ export default function VisitorDetailPage() {
     visitor.archive_prompt_dismissed_at &&
     differenceInCalendarDays(new Date(), new Date(visitor.archive_prompt_dismissed_at)) < 7;
   const showArchivePrompt =
-    (visitor.status === "Active" || visitor.status === "Settled") &&
+    visitor.status === "Active" &&
     daysSinceLastAttendance >= nudgeWeeks * 7 &&
     !dismissedRecently;
 
@@ -382,7 +382,7 @@ export default function VisitorDetailPage() {
           <AgeTag category={visitor.age_category} />
           <span className="tag bg-secondary text-primary">{visitor.service}</span>
           {visitor.is_returning && (
-            <span className="tag bg-sage/30 text-primary">Returning</span>
+            <span className="tag bg-sage text-primary">Returning</span>
           )}
           {assignedWelcomer && (
             <WelcomerTag name={assignedWelcomer.name} colorHex={assignedWelcomer.color_hex} />
