@@ -44,7 +44,7 @@ export default function LoginPage() {
         setSignupSuccess(true);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      if (err instanceof Error && err.message && err.message !== "{}") {
     } finally {
       setLoading(false);
     }
