@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAppData } from "@/lib/hooks/useAppData";
 import { PageHeader } from "@/components/PageHeader";
-import { Settings, LogOut, User, Bell, BellOff, UserPlus } from "lucide-react";
+import { Settings, LogOut, User, Bell, BellOff, UserPlus, HelpCircle } from "lucide-react";
 import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 
 export default function MorePage() {
