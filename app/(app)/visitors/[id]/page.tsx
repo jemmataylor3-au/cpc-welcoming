@@ -574,7 +574,7 @@ export default function VisitorDetailPage() {
                 <input
                   id="catchupDate"
                   type="date"
-                  className="input-field mb-3"
+                  className="input-field mb-3 w-full max-w-full min-w-0 box-border [-webkit-appearance:none] [appearance:none]"
                   value={visitor.catchup_date ?? ""}
                   disabled={saving}
                   onChange={(e) => updateField({ catchup_date: e.target.value || null })}
@@ -681,7 +681,7 @@ export default function VisitorDetailPage() {
               <input
                 id="dateFirstAttendedEdit"
                 type="date"
-                className="input-field"
+                className="input-field w-full max-w-full min-w-0 box-border [-webkit-appearance:none] [appearance:none]"
                 value={visitor.date_first_attended}
                 disabled={saving}
                 onChange={(e) =>
