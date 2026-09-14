@@ -502,7 +502,7 @@ export default function VisitorDetailPage() {
         )}
 
         {/* Weekly attendance */}
-        {visitor.status !== "Archived" && (
+        {(
           <div className="card p-4">
             <h4 className="mb-3">Attendance</h4>
             <div className="space-y-4">
@@ -553,7 +553,7 @@ export default function VisitorDetailPage() {
         )}
 
         {/* Catch-up */}
-        {visitor.status !== "Archived" && (
+        {(
           <div className="card p-4">
             <h4 className="mb-3">Catch-up</h4>
             <label className="flex items-center gap-3 mb-3">
@@ -597,7 +597,7 @@ export default function VisitorDetailPage() {
         )}
 
         {/* Bible study & Elvanto */}
-        {visitor.status !== "Archived" && (
+        {(
           <div className="card p-4">
             <h4 className="mb-3">Bible study & Elvanto</h4>
 
@@ -671,9 +671,26 @@ export default function VisitorDetailPage() {
         )}
 
         {/* Reason for attendance & age category (editable) */}
-        {visitor.status !== "Archived" && (
+        {(
           <div className="card p-4 space-y-3">
             <h4 className="mb-1">Details</h4>
+            <div>
+              <label className="label-field" htmlFor="nameEdit">
+                Name
+              </label>
+              <input
+                id="nameEdit"
+                className="input-field"
+                value={visitor.name}
+                disabled={saving}
+                onBlur={(e) => {
+                  if (e.target.value.trim()) updateField({ name: e.target.value.trim() });
+                }}
+                onChange={(e) =>
+                  setVisitor((v) => (v ? { ...v, name: e.target.value } : v))
+                }
+              />
+            </div>
             <div>
               <label className="label-field" htmlFor="dateFirstAttendedEdit">
                 Date first attended
