@@ -74,7 +74,7 @@ export default function ActiveVisitorsPage() {
 
       <div className="max-w-2xl mx-auto px-5 -mt-3">
         {justVisiting.length > 0 && (
-          <div className="card p-4 mb-4 border-accent/40 bg-accent/5">
+          <div className="card p-4 mb-4 border-accent/40 bg-sand">
             <h4 className="mb-2">
               {justVisiting.length === 1 ? "1 person was" : `${justVisiting.length} people were`}{" "}
               just visiting
