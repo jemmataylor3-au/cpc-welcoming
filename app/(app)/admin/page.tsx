@@ -353,6 +353,16 @@ function UsersSection({
     setSavingId(null);
   }
 
+  async function rejectUser(id: string) {
+    if (!confirm("Remove this pending signup? They'll need to sign up again if this was a mistake.")) {
+      return;
+    }
+    setSavingId(id);
+    await supabase.from("profiles").delete().eq("id", id);
+    await load();
+    setSavingId(null);
+  }
+
   async function setRole(id: string, role: "admin" | "welcomer") {
     setSavingId(id);
     await supabase.from("profiles").update({ role }).eq("id", id);
@@ -392,13 +402,22 @@ function UsersSection({
                   <p className="text-body text-textPrimary truncate">{u.full_name}</p>
                   <p className="text-small text-textSecondary truncate">{u.email}</p>
                 </div>
-                <button
-                  className="btn-primary h-10 px-4 shrink-0"
-                  disabled={savingId === u.id}
-                  onClick={() => setApproved(u.id, true)}
-                >
-                  Approve
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    className="btn-secondary h-10 px-3"
+                    disabled={savingId === u.id}
+                    onClick={() => rejectUser(u.id)}
+                  >
+                    Reject
+                  </button>
+                  <button
+                    className="btn-primary h-10 px-4"
+                    disabled={savingId === u.id}
+                    onClick={() => setApproved(u.id, true)}
+                  >
+                    Approve
+                  </button>
+                </div>
               </div>
             ))}
           </div>
