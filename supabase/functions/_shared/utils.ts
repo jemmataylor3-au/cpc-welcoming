@@ -43,6 +43,16 @@ export async function sendEmail({ to, subject, html }: SendEmailArgs) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   const fromAddress = Deno.env.get("RESEND_FROM_ADDRESS") ?? "welcoming@example.org";
 
+  // Temporary workaround while no domain is verified in Resend: Resend's
+  // sandbox mode only accepts sends to one pre-approved address, so every
+  // real recipient gets bounced. If EMAIL_FORWARD_TO is set, redirect every
+  // send there instead and prefix the subject with who it was really for,
+  // so a person can manually forward it on. Remove this once a real domain
+  // is verified — at that point EMAIL_FORWARD_TO should be unset entirely.
+  const forwardTo = Deno.env.get("EMAIL_FORWARD_TO");
+  const actualTo = forwardTo || to;
+  const actualSubject = forwardTo ? `[For: ${to}] ${subject}` : subject;
+
   if (!apiKey) {
     throw new Error("Missing RESEND_API_KEY environment variable.");
   }
@@ -55,8 +65,8 @@ export async function sendEmail({ to, subject, html }: SendEmailArgs) {
     },
     body: JSON.stringify({
       from: fromAddress,
-      to: [to],
-      subject,
+      to: [actualTo],
+      subject: actualSubject,
       html,
     }),
   });
