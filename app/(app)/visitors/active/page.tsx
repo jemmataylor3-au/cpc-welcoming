@@ -74,12 +74,12 @@ export default function ActiveVisitorsPage() {
 
       <div className="max-w-2xl mx-auto px-5 -mt-3">
         {justVisiting.length > 0 && (
-          <div className="card p-3 mt-3 mb-4 border-accent/40 bg-sand">
+          <div className="card p-3 mt-4 mb-4 border-accent/40 bg-sand">
             <h4 className="mb-2">
               {justVisiting.length === 1 ? "1 person was" : `${justVisiting.length} people were`}{" "}
               just visiting
             </h4>
-            <div className="space-y-1.5">
+            <div className="space-y-0.5">
               {justVisiting.map((v) => (
                 <Link
                   key={v.id}
