@@ -44,7 +44,17 @@ export default function LoginPage() {
         setSignupSuccess(true);
       }
     } catch (err) {
-      if (err instanceof Error && err.message && err.message !== "{}") {
+      // Supabase sometimes throws an error whose .message is just stray
+      // punctuation like "{}" or "()" rather than real words — show a
+      // real explanation instead of echoing that straight to the user.
+      const hasRealWords = err instanceof Error && /[a-zA-Z]{3,}/.test(err.message);
+      if (hasRealWords) {
+        setError((err as Error).message);
+      } else {
+        setError(
+          "Something went wrong creating your account. This usually means email sign-ups are misconfigured right now — please let your admin know."
+        );
+      }
     } finally {
       setLoading(false);
     }
